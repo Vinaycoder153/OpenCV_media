@@ -1,0 +1,39 @@
+environment:
+  name: "AI Business Growth OpenEnv"
+  version: "1.0.0"
+  seed: 42
+
+tasks:
+  task1:
+    name: "Social Media Growth"
+    difficulty: easy
+    max_steps: 10
+    target:
+      followers: 1000
+      engagement_rate: 0.05
+
+  task2:
+    name: "Review Management"
+    difficulty: medium
+    max_steps: 12
+    target:
+      avg_rating: 4.0
+      sentiment_score: 0.7
+
+  task3:
+    name: "Revenue Optimization"
+    difficulty: hard
+    max_steps: 15
+    target:
+      monthly_revenue: 120000
+      customer_satisfaction: 0.7
+
+agent:
+  model: "gpt-4o-mini"
+  temperature: 0.0
+  max_retries: 3
+
+logging:
+  level: "INFO"
+  log_dir: "logs"
+  log_file: "openenv_{task_id}_{timestamp}.log"
