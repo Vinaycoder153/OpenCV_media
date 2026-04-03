@@ -3,12 +3,12 @@
 
 Modes
 -----
-* LLM mode  — uses GPT-4o-mini via OPENAI_API_KEY (when the key is set).
+* LLM mode  — uses Gemini 1.5 Flash via GOOGLE_API_KEY (when the key is set).
 * Heuristic mode — runs a smart rule-based policy with no API calls.
 
 Usage
 -----
-    export OPENAI_API_KEY="sk-..."   # optional; falls back to heuristic
+    export GOOGLE_API_KEY="..."   # optional; falls back to heuristic
     python agent/baseline_agent.py
 """
 
@@ -30,6 +30,7 @@ from agent.action_parser import (
     format_observation_for_llm,
     parse_action_from_text,
 )
+from agent.gemini_client import create_gemini_client
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -56,20 +57,30 @@ _HEURISTICS: Dict[int, List[Action]] = {
     ],
     2: [
         Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "quality"}),
-        Action(action_type=ActionType.REPLY_REVIEW, parameters={"tone": "professional"}),
-        Action(action_type=ActionType.REQUEST_REVIEW, parameters={"channel": "in-person"}),
+        Action(
+            action_type=ActionType.REPLY_REVIEW, parameters={"tone": "professional"}
+        ),
+        Action(
+            action_type=ActionType.REQUEST_REVIEW, parameters={"channel": "in-person"}
+        ),
         Action(action_type=ActionType.REPLY_REVIEW, parameters={"tone": "friendly"}),
         Action(action_type=ActionType.OFFER_DISCOUNT, parameters={"value": 15}),
         Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "speed"}),
     ],
     3: [
-        Action(action_type=ActionType.RUN_CAMPAIGN, parameters={"type": "social", "budget": 5000}),
+        Action(
+            action_type=ActionType.RUN_CAMPAIGN,
+            parameters={"type": "social", "budget": 5000},
+        ),
         Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 15}),
         Action(
             action_type=ActionType.LAUNCH_BUNDLE,
             parameters={"items": ["item1", "item2", "item3"], "bundle_price": 300.0},
         ),
-        Action(action_type=ActionType.RUN_CAMPAIGN, parameters={"type": "email", "budget": 3000}),
+        Action(
+            action_type=ActionType.RUN_CAMPAIGN,
+            parameters={"type": "email", "budget": 3000},
+        ),
     ],
 }
 
@@ -85,8 +96,8 @@ class BaselineAgent:
     Parameters
     ----------
     task_id   : 1, 2, or 3
-    use_llm   : use GPT-4o-mini when True and OPENAI_API_KEY is set
-    model     : OpenAI model name
+    use_llm   : use Gemini when True and GOOGLE_API_KEY is set
+    model     : Gemini model name (default: "gemini-1.5-flash")
     seed      : environment seed for reproducibility
     """
 
@@ -94,24 +105,24 @@ class BaselineAgent:
         self,
         task_id: int,
         use_llm: bool = True,
-        model: str = "gpt-4o-mini",
+        model: str = "gemini-1.5-flash",
         seed: int = 42,
     ) -> None:
         self.task_id = task_id
         self.model = model
         self.seed = seed
 
-        api_key = os.environ.get("OPENAI_API_KEY", "")
+        api_key = os.environ.get("GOOGLE_API_KEY", "")
         self.use_llm = use_llm and bool(api_key)
         self._client = None
 
         if self.use_llm:
             try:
-                from openai import OpenAI  # type: ignore
-
-                self._client = OpenAI(api_key=api_key)
+                self._client = create_gemini_client(api_key=api_key)
             except ImportError:
-                log.warning("openai package not installed — falling back to heuristic mode.")
+                log.warning(
+                    "google-generativeai package not installed — falling back to heuristic mode."
+                )
                 self.use_llm = False
 
         self._env = BusinessEnv(task_id=task_id, seed=seed)
@@ -220,8 +231,10 @@ class BaselineAgent:
 
 def main() -> None:
     log.info("=== AI Business Growth Baseline Agent ===")
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    log.info("Mode: %s", "LLM (GPT-4o-mini)" if api_key else "Heuristic (no API key)")
+    api_key = os.environ.get("GOOGLE_API_KEY", "")
+    log.info(
+        "Mode: %s", "LLM (Gemini 1.5 Flash)" if api_key else "Heuristic (no API key)"
+    )
 
     results = []
     for task_id in [1, 2, 3]:

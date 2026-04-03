@@ -29,7 +29,7 @@ tasks:
       customer_satisfaction: 0.7
 
 agent:
-  model: "gpt-4o-mini"
+  model: "gemini-1.5-flash"
   temperature: 0.0
   max_retries: 3
 

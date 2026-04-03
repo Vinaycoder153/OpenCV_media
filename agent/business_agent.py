@@ -12,8 +12,7 @@ import os
 import logging
 from typing import Any, Dict, List, Optional, Union
 
-from openai import OpenAI
-
+from agent.gemini_client import create_gemini_client
 from agent.intelligence import build_fallback_response
 from agent.prompts import SYSTEM_PROMPT
 from agent.capabilities.social_media import generate_social_media_content
@@ -31,18 +30,18 @@ class BusinessGrowthAgent:
     """
     AI Business Growth Partner for small and local Indian businesses.
 
-    Wraps an OpenAI chat-completion client and exposes all nine capabilities
+    Wraps a Google Gemini chat-completion client and exposes all nine capabilities
     as friendly, type-annotated methods.
 
     Parameters
     ----------
     api_key:
-        OpenAI API key.  Falls back to the ``OPENAI_API_KEY`` environment
+        Google API key.  Falls back to the ``GOOGLE_API_KEY`` environment
         variable when not supplied.
     model:
-        OpenAI model to use (default: ``"gpt-4o-mini"``).
+        Gemini model to use (default: ``"gemini-1.5-flash"``).
     temperature:
-        Sampling temperature (0.0 – 1.0).  Lower values produce more
+        Sampling temperature (0.0 – 2.0).  Lower values produce more
         consistent, structured output; higher values add creativity.
     """
 
@@ -52,16 +51,16 @@ class BusinessGrowthAgent:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
     ) -> None:
-        resolved_key = api_key or os.environ.get("OPENAI_API_KEY", "")
+        resolved_key = api_key or os.environ.get("GOOGLE_API_KEY", "")
         if not resolved_key:
             raise ValueError(
-                "OpenAI API key is required.  Pass it as `api_key` or set the "
-                "OPENAI_API_KEY environment variable."
+                "Google API key is required.  Pass it as `api_key` or set the "
+                "GOOGLE_API_KEY environment variable."
             )
         self._logger = logging.getLogger(__name__)
-        self._client = OpenAI(api_key=resolved_key)
-        self.model = model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-        temp_from_env = os.environ.get("OPENAI_TEMPERATURE")
+        self._client = create_gemini_client(api_key=resolved_key)
+        self.model = model or os.environ.get("GOOGLE_MODEL", "gemini-1.5-flash")
+        temp_from_env = os.environ.get("GOOGLE_TEMPERATURE")
         self.temperature = (
             temperature
             if temperature is not None
@@ -129,7 +128,7 @@ class BusinessGrowthAgent:
         try:
             if value is None or value.strip() == "":
                 return 0.7
-            return max(0.0, min(1.0, float(value)))
+            return max(0.0, min(2.0, float(value)))
         except Exception:
             return 0.7
 

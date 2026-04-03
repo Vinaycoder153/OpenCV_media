@@ -6,17 +6,15 @@ Usage
 -----
     python main.py
 
-Set your OpenAI API key before running:
+Set your Google API key before running:
 
-    export OPENAI_API_KEY="sk-..."
+    export GOOGLE_API_KEY="..."
 """
 
 from __future__ import annotations
 
 import sys
 from typing import Optional
-
-import openai
 
 from agent import BusinessGrowthAgent
 
@@ -27,6 +25,7 @@ _DEFAULT_GROWTH_HOURS = 8.0
 # ---------------------------------------------------------------------------
 # Helper utilities
 # ---------------------------------------------------------------------------
+
 
 def _separator(char: str = "─", width: int = 60) -> str:
     return char * width
@@ -69,6 +68,7 @@ def _prompt_float(label: str, default: float = 8.0) -> float:
 # ---------------------------------------------------------------------------
 # Menu handlers
 # ---------------------------------------------------------------------------
+
 
 def _social_media(agent: BusinessGrowthAgent) -> None:
     print("\n📱 Social Media Content Generator")
@@ -210,7 +210,9 @@ def _daily_plan(agent: BusinessGrowthAgent) -> None:
     btype = _prompt("Business type")
     loc = _prompt("Location")
     focus = _prompt("Today's focus area (e.g. social media, new offers, service speed)")
-    hours = _prompt_float("Hours available for growth tasks today", _DEFAULT_GROWTH_HOURS)
+    hours = _prompt_float(
+        "Hours available for growth tasks today", _DEFAULT_GROWTH_HOURS
+    )
     budget = _prompt_int("Budget available today in ₹ (0 if none)", 0)
 
     print("\n⏳ Creating your plan...\n")
@@ -308,7 +310,7 @@ def main() -> None:
                 handler(agent)
             except KeyboardInterrupt:
                 print("\n\n  (Cancelled — returning to menu)")
-            except (openai.OpenAIError, ValueError, IOError) as exc:
+            except (ValueError, IOError) as exc:
                 print(f"\n❌ An error occurred: {exc}")
 
 
