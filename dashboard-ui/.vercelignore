@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env.example
+README.md
+tsconfig.json
+vite.config.ts
+src/
+node_modules/
+.venv
+.pytest_cache
+__pycache__
+*.py
+*.md
+.DS_Store
+.cache

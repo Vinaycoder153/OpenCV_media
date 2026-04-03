@@ -1,0 +1,15 @@
+.git
+.gitignore
+deployment/
+.venv
+__pycache__
+*.pyc
+env/
+agent/
+tests/
+config/
+README.md
+requirements.txt
+LICENSE
+main.py
+.pytest_cache
