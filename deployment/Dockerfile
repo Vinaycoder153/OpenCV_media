@@ -1,23 +1,36 @@
 FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
+# Set environment for reproducibility and efficiency
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONPATH=/app
 
+# Set working directory
 WORKDIR /app
 
-RUN useradd --create-home --shell /bin/bash appuser
+# Copy only requirements (for Docker layer caching)
+COPY requirements.txt .
 
-COPY requirements.txt /app/requirements.txt
-RUN pip install --upgrade pip \
-    && pip install -r /app/requirements.txt
+# Upgrade pip and install dependencies
+RUN pip install --upgrade pip setuptools && \
+    pip install -r requirements.txt
 
-COPY inference.py /app/inference.py
-COPY config /app/config
-COPY env /app/env
-COPY agent /app/agent
+# Copy minimal project structure (exclude unnecessary files)
+COPY config ./config
+COPY env ./env
+COPY agent ./agent
+COPY inference.py .
 
-USER appuser
+# Health check (optional but recommended for HF Spaces)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import sys; sys.exit(0)" || exit 1
 
-CMD ["python", "inference.py"]
+# Entrypoint: canonical inference script
+ENV SEED=42
+ENV USE_LLM=false
+ENV API_BASE_URL=https://api.openai.com/v1
+ENV MODEL_NAME=gpt-4o-mini
+
+ENTRYPOINT ["python", "inference.py"]

@@ -1,18 +1,24 @@
-"""Action parsing utilities: LLM text ↔ Action objects."""
+"""Action parsing utilities: LLM text ↔ Action objects.
+
+Type-safe, deterministic action parsing with graceful fallback.
+"""
 
 from __future__ import annotations
 
 import json
+import logging
 import re
 from typing import Dict, Optional
 
 from env.models.schemas import Action, ActionType
 
-# Per-task system prompts for the baseline LLM agent
+log = logging.getLogger(__name__)
+
+# Per-task system prompts for LLM agent
 TASK_ACTION_PROMPTS: Dict[int, str] = {
     1: (
         "You are an expert social media growth consultant for small Indian businesses. "
-        "Your goal is to grow followers above 1 000 and engagement rate above 5%. "
+        "Your goal is to grow followers above 1,000 and engagement rate above 5%. "
         "Choose ONE action per step. Respond ONLY with a JSON object, e.g.:\n"
         '{"action_type": "generate_post", "parameters": {"quality": 4}}\n\n'
         "Available actions:\n"
@@ -53,22 +59,37 @@ TASK_ACTION_PROMPTS: Dict[int, str] = {
 def parse_action_from_text(text: str) -> Optional[Action]:
     """Parse a JSON action from raw LLM output.
 
-    Tries to extract a JSON object from the text even if there is surrounding
-    prose. Returns ``None`` if parsing fails.
+    Tries to extract a JSON object from the text even if surrounded
+    by prose. Returns ``None`` if parsing fails.
+
+    Parameters
+    ----------
+    text : str
+        Raw LLM response text.
+
+    Returns
+    -------
+    Optional[Action]
+        Parsed Action if successful, None otherwise.
     """
+    if not text or not text.strip():
+        log.debug("Empty text provided to parse_action_from_text")
+        return None
+
+    stripped: str = text.strip()
+
     # Try direct parse first
-    stripped = text.strip()
     try:
-        data = json.loads(stripped)
+        data: Dict = json.loads(stripped)
         return Action(
             action_type=ActionType(data["action_type"]),
             parameters=data.get("parameters", {}),
         )
-    except Exception:
-        pass
+    except (json.JSONDecodeError, ValueError, KeyError) as e:
+        log.debug(f"Direct JSON parse failed: {e}")
 
     # Try to find a JSON block inside the text
-    match = re.search(r"\{.*?\}", stripped, re.DOTALL)
+    match = re.search(r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", stripped, re.DOTALL)
     if match:
         try:
             data = json.loads(match.group())
@@ -76,30 +97,67 @@ def parse_action_from_text(text: str) -> Optional[Action]:
                 action_type=ActionType(data["action_type"]),
                 parameters=data.get("parameters", {}),
             )
-        except Exception:
-            pass
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            log.debug(f"Extracted JSON parse failed: {e}")
 
+    log.warning(f"Could not parse action from text: {text[:100]}...")
     return None
 
 
 def action_to_prompt_description(action: Action) -> str:
-    """Return a human-readable description of an action."""
-    params = ", ".join(f"{k}={v}" for k, v in action.parameters.items())
+    """Return a human-readable description of an action.
+
+    Parameters
+    ----------
+    action : Action
+        The action to describe.
+
+    Returns
+    -------
+    str
+        Human-readable description.
+    """
+    params: str = ", ".join(f"{k}={v}" for k, v in action.parameters.items())
     if params:
         return f"{action.action_type.value}({params})"
     return action.action_type.value
 
 
-def format_observation_for_llm(obs) -> str:  # obs: Observation
-    """Format an Observation as a readable string for the LLM prompt."""
+def format_observation_for_llm(obs) -> str:
+    """Format an Observation as a readable string for the LLM prompt.
+
+    Parameters
+    ----------
+    obs : Observation
+        The observation to format.
+
+    Returns
+    -------
+    str
+        Formatted observation text suitable for LLM input.
+    """
     m = obs.metrics
-    lines = [
+    lines: list = [
         f"Step {obs.step} | Task {obs.task_id}: {obs.task_description}",
         f"Trend: {obs.trend}",
         "Metrics:",
     ]
+
+    if m.followers > 0:
+        lines.append(f"  Followers: {m.followers}, Engagement: {m.engagement_rate:.2f}")
+    if m.avg_rating > 0:
+        lines.append(f"  Rating: {m.avg_rating:.2f}, Reviews: {m.total_reviews}")
+    if m.monthly_revenue > 0:
+        lines.append(
+            f"  Revenue: ₹{m.monthly_revenue:.0f}, Daily Orders: {m.daily_orders}"
+        )
+
+    lines.append(f"Recent actions: {', '.join(obs.recent_actions[-3:]) or 'none'}")
+    lines.append(f"Valid actions: {', '.join(obs.valid_actions)}")
     if m.followers:
-        lines.append(f"  followers={m.followers}  engagement_rate={m.engagement_rate:.3f}")
+        lines.append(
+            f"  followers={m.followers}  engagement_rate={m.engagement_rate:.3f}"
+        )
     if m.avg_rating:
         lines.append(
             f"  avg_rating={m.avg_rating:.2f}  total_reviews={m.total_reviews}"

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any, Dict, Optional
 
 from agent.action_parser import (
@@ -17,9 +18,12 @@ from agent.action_parser import (
     parse_action_from_text,
 )
 from agent.openai_client import create_openai_client
-from config.runtime_config import DEFAULT_SEED, RuntimeConfig, RuntimeConfigError
 from env.business_env import BusinessEnv
 from env.models.schemas import Action, ActionType, Observation
+
+DEFAULT_API_BASE_URL = "https://api.openai.com/v1"
+DEFAULT_MODEL_NAME = "gpt-4o-mini"
+DEFAULT_SEED = 42
 
 log = logging.getLogger("inference")
 
@@ -27,22 +31,22 @@ log = logging.getLogger("inference")
 class InferenceRunner:
     """Deterministic environment runner for hackathon evaluation."""
 
-    def __init__(self, config: RuntimeConfig) -> None:
-        self.seed = config.seed
-        self.api_base_url = config.api_base_url
-        self.model_name = config.model_name
-        self.use_llm = config.use_llm
-        self.hf_token = config.hf_token
+    def __init__(self) -> None:
+        self.seed = _parse_int_env("SEED", DEFAULT_SEED)
+        self.api_base_url = os.environ.get("API_BASE_URL", DEFAULT_API_BASE_URL)
+        self.model_name = os.environ.get("MODEL_NAME", DEFAULT_MODEL_NAME)
+        self.use_llm = _parse_bool_env("USE_LLM", False)
         self.client = self._build_client_if_enabled()
 
     def _build_client_if_enabled(self):
         if not self.use_llm:
             return None
 
-        if not self.hf_token:
-            raise RuntimeConfigError("HF_TOKEN is required when USE_LLM=true.")
+        hf_token = os.environ.get("HF_TOKEN", "").strip()
+        if not hf_token:
+            raise ValueError("HF_TOKEN is required when USE_LLM=true.")
 
-        return create_openai_client(api_key=self.hf_token, base_url=self.api_base_url)
+        return create_openai_client(api_key=hf_token, base_url=self.api_base_url)
 
     def run(self) -> None:
         total_reward = 0.0
@@ -156,18 +160,27 @@ def _emit_step(payload: Dict[str, Any]) -> None:
     print(json.dumps(payload, ensure_ascii=True, separators=(",", ":")))
 
 
+def _parse_bool_env(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _parse_int_env(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
 def main() -> None:
     print("[START]")
     try:
-        config = RuntimeConfig.from_env()
-        log.setLevel(logging.INFO)
-        log.info(
-            "Starting inference with seed=%s model=%s use_llm=%s",
-            config.seed,
-            config.model_name,
-            config.use_llm,
-        )
-        runner = InferenceRunner(config=config)
+        runner = InferenceRunner()
         runner.run()
     except Exception as exc:
         _emit_step(
@@ -176,7 +189,6 @@ def main() -> None:
                 "done": True,
                 "goal_reached": False,
                 "reward": f"{0.0:.2f}",
-                "seed": DEFAULT_SEED,
             }
         )
     finally:

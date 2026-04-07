@@ -2,6 +2,7 @@ environment:
   name: "AI Business Growth OpenEnv"
   version: "1.0.0"
   seed: 42
+  notes: "OpenAI-compatible environment optimized for hackathon evaluation"
 
 tasks:
   task1:
@@ -29,6 +30,8 @@ tasks:
       customer_satisfaction: 0.7
 
 agent:
+  # OpenAI-compatible configuration
+  provider: "openai"
   model: "gpt-4o-mini"
   api_base_url: "https://api.openai.com/v1"
   temperature: 0.0
@@ -37,4 +40,4 @@ agent:
 logging:
   level: "INFO"
   log_dir: "logs"
-  log_file: "openenv_{task_id}_{timestamp}.log"
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
