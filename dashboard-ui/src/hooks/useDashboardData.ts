@@ -30,7 +30,7 @@ export function useDashboardData() {
   }, []);
 
   useEffect(() => {
-    void loadSnapshot('refresh');
+    void loadSnapshot('initial');
   }, [loadSnapshot]);
 
   const contentResult = snapshot?.contentResult ?? mockDashboard.contentResult;
