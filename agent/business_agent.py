@@ -1,9 +1,7 @@
-"""
-Core Business Growth Agent class.
+"""Core Business Growth Agent class.
 
-Orchestrates all seven capabilities and manages conversation history so that
-the agent can be used both as a single-turn advisor and as a multi-turn
-interactive assistant.
+Orchestrates all capabilities and manages conversation history so the agent can
+be used as both a single-turn advisor and a multi-turn assistant.
 """
 
 from __future__ import annotations
@@ -12,7 +10,7 @@ import os
 import logging
 from typing import Any, Dict, List, Optional, Union
 
-from agent.gemini_client import create_gemini_client
+from agent.openai_client import create_openai_client
 from agent.intelligence import build_fallback_response
 from agent.prompts import SYSTEM_PROMPT
 from agent.capabilities.social_media import generate_social_media_content
@@ -30,16 +28,16 @@ class BusinessGrowthAgent:
     """
     AI Business Growth Partner for small and local Indian businesses.
 
-    Wraps a Google Gemini chat-completion client and exposes all nine capabilities
+    Wraps an OpenAI-compatible chat-completion client and exposes all capabilities
     as friendly, type-annotated methods.
 
     Parameters
     ----------
     api_key:
-        Google API key.  Falls back to the ``GOOGLE_API_KEY`` environment
+        OpenAI-compatible API key. Falls back to the ``OPENAI_API_KEY`` environment
         variable when not supplied.
     model:
-        Gemini model to use (default: ``"gemini-1.5-flash"``).
+        Model to use (default: ``"gpt-4o-mini"``).
     temperature:
         Sampling temperature (0.0 – 2.0).  Lower values produce more
         consistent, structured output; higher values add creativity.
@@ -51,16 +49,19 @@ class BusinessGrowthAgent:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
     ) -> None:
-        resolved_key = api_key or os.environ.get("GOOGLE_API_KEY", "")
+        resolved_key = api_key or os.environ.get("OPENAI_API_KEY", "")
         if not resolved_key:
             raise ValueError(
-                "Google API key is required.  Pass it as `api_key` or set the "
-                "GOOGLE_API_KEY environment variable."
+                "OpenAI API key is required. Pass it as `api_key` or set the "
+                "OPENAI_API_KEY environment variable."
             )
         self._logger = logging.getLogger(__name__)
-        self._client = create_gemini_client(api_key=resolved_key)
-        self.model = model or os.environ.get("GOOGLE_MODEL", "gemini-1.5-flash")
-        temp_from_env = os.environ.get("GOOGLE_TEMPERATURE")
+        self._client = create_openai_client(
+            api_key=resolved_key,
+            base_url=os.environ.get("API_BASE_URL") or None,
+        )
+        self.model = model or os.environ.get("MODEL_NAME", "gpt-4o-mini")
+        temp_from_env = os.environ.get("MODEL_TEMPERATURE")
         self.temperature = (
             temperature
             if temperature is not None

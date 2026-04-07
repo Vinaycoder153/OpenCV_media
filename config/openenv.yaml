@@ -29,7 +29,8 @@ tasks:
       customer_satisfaction: 0.7
 
 agent:
-  model: "gemini-1.5-flash"
+  model: "gpt-4o-mini"
+  api_base_url: "https://api.openai.com/v1"
   temperature: 0.0
   max_retries: 3
 

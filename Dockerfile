@@ -11,7 +11,7 @@ RUN useradd --create-home --shell /bin/bash appuser
 
 COPY requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip \
-    && pip install -r /app/requirements.txt
+    && pip install --no-cache-dir -r /app/requirements.txt
 
 COPY inference.py /app/inference.py
 COPY config /app/config

@@ -8,7 +8,7 @@ Usage
 
 Set your Google API key before running:
 
-    export GOOGLE_API_KEY="..."
+    export OPENAI_API_KEY="..."
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from agent import BusinessGrowthAgent
 
 # Default hours available for growth tasks in the daily action planner
 _DEFAULT_GROWTH_HOURS = 8.0
-
+from openai import OpenAI
 
 # ---------------------------------------------------------------------------
 # Helper utilities

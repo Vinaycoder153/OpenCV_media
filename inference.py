@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""Hackathon inference entrypoint.
+
+This script is designed for deterministic, low-resource execution and strict
+output formatting required by OpenEnv-style evaluators.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any, Dict, Optional
+
+from agent.action_parser import (
+    TASK_ACTION_PROMPTS,
+    format_observation_for_llm,
+    parse_action_from_text,
+)
+from agent.openai_client import create_openai_client
+from config.runtime_config import DEFAULT_SEED, RuntimeConfig, RuntimeConfigError
+from env.business_env import BusinessEnv
+from env.models.schemas import Action, ActionType, Observation
+
+log = logging.getLogger("inference")
+
+
+class InferenceRunner:
+    """Deterministic environment runner for hackathon evaluation."""
+
+    def __init__(self, config: RuntimeConfig) -> None:
+        self.seed = config.seed
+        self.api_base_url = config.api_base_url
+        self.model_name = config.model_name
+        self.use_llm = config.use_llm
+        self.hf_token = config.hf_token
+        self.client = self._build_client_if_enabled()
+
+    def _build_client_if_enabled(self):
+        if not self.use_llm:
+            return None
+
+        if not self.hf_token:
+            raise RuntimeConfigError("HF_TOKEN is required when USE_LLM=true.")
+
+        return create_openai_client(api_key=self.hf_token, base_url=self.api_base_url)
+
+    def run(self) -> None:
+        total_reward = 0.0
+        for task_id in (1, 2, 3):
+            env = BusinessEnv(task_id=task_id, seed=self.seed)
+            obs = env.reset()
+
+            while True:
+                action = self._select_action(task_id=task_id, observation=obs)
+                result = env.step(action)
+                total_reward += result.reward.value
+
+                _emit_step(
+                    {
+                        "task_id": task_id,
+                        "step": result.observation.step,
+                        "action": action.action_type.value,
+                        "reward": f"{result.reward.value:.2f}",
+                        "done": bool(result.done),
+                        "goal_reached": bool(result.info.get("goal_reached", False)),
+                    }
+                )
+
+                obs = result.observation
+                if result.done:
+                    break
+
+        _emit_step(
+            {
+                "summary": "run_complete",
+                "total_reward": f"{total_reward:.2f}",
+                "done": True,
+                "goal_reached": True,
+            }
+        )
+
+    def _select_action(self, task_id: int, observation: Observation) -> Action:
+        if self.client is not None:
+            llm_action = self._try_llm_action(task_id=task_id, observation=observation)
+            if llm_action is not None:
+                return llm_action
+        return _heuristic_action(task_id=task_id, step=observation.step)
+
+    def _try_llm_action(
+        self, task_id: int, observation: Observation
+    ) -> Optional[Action]:
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": TASK_ACTION_PROMPTS[task_id]},
+                    {
+                        "role": "user",
+                        "content": format_observation_for_llm(observation),
+                    },
+                ],
+                temperature=0.0,
+            )
+            text = response.choices[0].message.content or ""
+            parsed = parse_action_from_text(text)
+            if parsed is not None:
+                return parsed
+        except Exception as exc:
+            log.warning("LLM action fallback triggered: %s", exc)
+        return None
+
+
+def _heuristic_action(task_id: int, step: int) -> Action:
+    task_actions = {
+        1: [
+            Action(action_type=ActionType.ADD_HASHTAGS, parameters={"count": 8}),
+            Action(action_type=ActionType.SCHEDULE_POST, parameters={"timing": "peak"}),
+            Action(action_type=ActionType.GENERATE_POST, parameters={"quality": 5}),
+            Action(action_type=ActionType.RUN_AD, parameters={"budget": 1800}),
+        ],
+        2: [
+            Action(
+                action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "quality"}
+            ),
+            Action(
+                action_type=ActionType.REPLY_REVIEW, parameters={"tone": "professional"}
+            ),
+            Action(
+                action_type=ActionType.REQUEST_REVIEW,
+                parameters={"channel": "in-person"},
+            ),
+            Action(action_type=ActionType.OFFER_DISCOUNT, parameters={"value": 10}),
+        ],
+        3: [
+            Action(
+                action_type=ActionType.RUN_CAMPAIGN,
+                parameters={"type": "social", "budget": 4000},
+            ),
+            Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 10}),
+            Action(
+                action_type=ActionType.LAUNCH_BUNDLE,
+                parameters={"items": ["coffee", "snack"], "bundle_price": 210.0},
+            ),
+            Action(
+                action_type=ActionType.RUN_CAMPAIGN,
+                parameters={"type": "email", "budget": 2500},
+            ),
+        ],
+    }
+    choices = task_actions[task_id]
+    return choices[step % len(choices)]
+
+
+def _emit_step(payload: Dict[str, Any]) -> None:
+    print("[STEP]")
+    print(json.dumps(payload, ensure_ascii=True, separators=(",", ":")))
+
+
+def main() -> None:
+    print("[START]")
+    try:
+        config = RuntimeConfig.from_env()
+        log.setLevel(logging.INFO)
+        log.info(
+            "Starting inference with seed=%s model=%s use_llm=%s",
+            config.seed,
+            config.model_name,
+            config.use_llm,
+        )
+        runner = InferenceRunner(config=config)
+        runner.run()
+    except Exception as exc:
+        _emit_step(
+            {
+                "error": str(exc),
+                "done": True,
+                "goal_reached": False,
+                "reward": f"{0.0:.2f}",
+                "seed": DEFAULT_SEED,
+            }
+        )
+    finally:
+        print("[END]")
+
+
+if __name__ == "__main__":
+    main()

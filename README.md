@@ -1,113 +1,57 @@
-# 🚀 AI Business Growth — OpenEnv Environment
+# AI Business Growth OpenEnv Environment
 
-A **production-ready reinforcement-learning environment** that simulates realistic
-small-business operations (marketing, reviews, revenue) and exposes an OpenEnv-compliant
-interface so AI agents can train, act, and be evaluated deterministically.
+Production-ready OpenEnv-style reinforcement learning environment for business growth decisions, optimized for deterministic evaluation and Hugging Face Spaces Docker deployment.
 
-Designed for Indian small businesses (cafes, salons, restaurants, retail shops).
+## What the environment does
 
----
+The environment simulates small-business decision making across three tasks:
 
-## 🌍 Real-World Relevance
+1. Social media growth
+2. Review management
+3. Revenue optimization
 
-India has 63+ million SMEs. Most lack data-driven tools to grow. This environment
-simulates the exact growth levers available to a local business owner, making it ideal for:
+Each episode follows an OpenEnv-compatible loop:
 
-- Training AI agents on realistic business strategy tasks
-- Benchmarking LLM reasoning in structured decision environments
-- Generating synthetic training data for downstream models
+- `obs = env.reset()`
+- `result = env.step(action)`
+- `state = env.state()`
 
----
+The canonical hackathon entrypoint is `inference.py` at repository root.
 
-## 🏗️ Project Structure
+## Tasks
 
-```
-opencv_pro/
-├── env/                                  # OpenEnv environment
-│   ├── __init__.py
-│   ├── business_env.py                   # BusinessEnv: reset / step / state
-│   ├── models/
-│   │   └── schemas.py                    # Pydantic v2: Action, Observation, Reward …
-│   ├── tasks/
-│   │   ├── base_task.py
-│   │   ├── task1_social_media.py         # Easy   (10 steps)
-│   │   ├── task2_review_management.py    # Medium (12 steps)
-│   │   └── task3_revenue_optimization.py # Hard   (15 steps)
-│   └── graders/
-│       ├── base_grader.py
-│       ├── grader1.py                    # Social Media grader
-│       ├── grader2.py                    # Review Management grader
-│       └── grader3.py                    # Revenue grader
-├── agent/
-│   ├── __init__.py
-│   ├── baseline_agent.py                 # Heuristic + GPT-4o-mini agent
-│   ├── action_parser.py                  # LLM text → Action, per-task prompts
-│   ├── business_agent.py                 # Interactive CLI agent
-│   ├── prompts.py
-│   └── capabilities/                     # 9 advisory capabilities
-├── config/
-│   └── openenv.yaml                      # Task targets, model, logging
-├── deployment/
-│   └── Dockerfile                        # python:3.11-slim container
-├── tests/
-│   └── test_agent.py
-├── main.py                               # Interactive CLI entry point
-├── requirements.txt
-└── README.md
-```
+### Task 1: Social Media Growth
 
----
+- Max steps: `10`
+- Initial state: `followers=500`, `engagement_rate=0.02`
+- Goal: `followers >= 1000` and `engagement_rate >= 0.05`
 
-## 🎯 Task Descriptions
+### Task 2: Review Management
 
-### Task 1 — Social Media Growth (Easy)
+- Max steps: `12`
+- Initial state: `avg_rating=3.2`, `sentiment_score=0.40`
+- Goal: `avg_rating >= 4.0` and `sentiment_score >= 0.7`
 
-| Parameter | Value |
-|-----------|-------|
-| Max steps | 10 |
-| Starting state | 500 followers, 2% engagement |
-| Goal | ≥ 1 000 followers AND ≥ 5% engagement rate |
+### Task 3: Revenue Optimization
 
-**Available actions:** `generate_post`, `add_hashtags`, `schedule_post`, `run_ad`, `no_op`
+- Max steps: `15`
+- Initial state: `monthly_revenue=80000`, `daily_orders=25`
+- Goal: `monthly_revenue >= 120000` and `customer_satisfaction >= 0.7`
 
-### Task 2 — Review Management (Medium)
+## Action space
 
-| Parameter | Value |
-|-----------|-------|
-| Max steps | 12 |
-| Starting state | avg_rating 3.2, sentiment 0.40 |
-| Goal | avg_rating ≥ 4.0 AND sentiment_score ≥ 0.7 |
-
-**Available actions:** `reply_review`, `request_review`, `offer_discount`, `improve_service`, `no_op`
-
-### Task 3 — Revenue Optimization (Hard)
-
-| Parameter | Value |
-|-----------|-------|
-| Max steps | 15 |
-| Starting state | ₹80,000/month revenue, 25 daily orders |
-| Goal | ≥ ₹1,20,000/month AND customer_satisfaction ≥ 0.7 |
-
-**Available actions:** `change_price`, `add_offer`, `run_campaign`, `launch_bundle`, `no_op`
-
----
-
-## 🎮 Action Space
-
-Each action is a JSON object with `action_type` and `parameters`:
+Actions are JSON objects:
 
 ```json
-{"action_type": "generate_post",  "parameters": {"quality": 4}}
-{"action_type": "reply_review",   "parameters": {"tone": "professional"}}
-{"action_type": "run_campaign",   "parameters": {"type": "social", "budget": 5000}}
-{"action_type": "launch_bundle",  "parameters": {"items": ["coffee", "cake"], "bundle_price": 180.0}}
+{"action_type":"generate_post","parameters":{"quality":4}}
+{"action_type":"reply_review","parameters":{"tone":"professional"}}
+{"action_type":"run_campaign","parameters":{"type":"social","budget":4000}}
+{"action_type":"launch_bundle","parameters":{"items":["coffee","snack"],"bundle_price":210.0}}
 ```
 
-Invalid / repeated actions are penalised; destructive decisions reduce rewards.
+## Observation space
 
----
-
-## 📊 Observation Space
+Observations expose task context, current metrics, and valid actions:
 
 ```json
 {
@@ -121,174 +65,160 @@ Invalid / repeated actions are penalised; destructive decisions reduce rewards.
   },
   "recent_actions": ["add_hashtags", "schedule_post", "generate_post"],
   "trend": "growing",
-  "task_description": "Grow followers to 1000+ ...",
   "valid_actions": ["generate_post", "add_hashtags", "schedule_post", "run_ad", "no_op"]
 }
 ```
 
----
+## Reward design
 
-## 🎁 Reward Design
+Reward is shaped and continuous with additive components:
 
-The reward is **continuous and shaped** across steps:
+- Positive progress (`progress`)
+- No-op penalty (`no_op_penalty`)
+- Repetition penalty (`spam_penalty`)
+- Destructive-change penalty (`destructive`)
+- Goal/terminal bonus (`goal_bonus`, `terminal_bonus`)
 
-| Component | When | Value |
-|-----------|------|-------|
-| `progress` | Positive metric delta | +0.4 – +0.6 × normalised delta |
-| `no_op_penalty` | `no_op` action | −0.10 |
-| `spam_penalty` | Same action 3+ times in a row | −0.05 × (run − 1) |
-| `destructive` | Large negative metric change | proportional negative |
-| `goal_bonus` | Goal reached | +1.0 |
+Task graders map terminal performance to `[0.0, 1.0]`.
 
----
+## Hackathon inference contract
 
-## 🧠 Grader System
+`inference.py` guarantees:
 
-Each grader returns a score in [0.0, 1.0]:
+- `API_BASE_URL` default: `https://api.openai.com/v1`
+- `MODEL_NAME` default: `gpt-4o-mini`
+- `HF_TOKEN` validation when `USE_LLM=true`
+- OpenAI Python client usage only
+- Output envelope in exact order:
+  - `[START]`
+  - repeated `[STEP]` + one-line JSON payload
+  - `[END]`
+- JSON booleans are lowercase (native JSON `true`/`false`)
+- Reward values are emitted as strings formatted to exactly 2 decimals
+- `[END]` is emitted even when exceptions occur
 
-| Label | Range |
-|-------|-------|
-| Poor | < 0.4 |
-| Average | 0.4 – 0.7 |
-| Good | > 0.7 |
+## Setup
 
----
-
-## ⚙️ Setup
-
-### 1. Install dependencies
+### 1. Install runtime dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Set your OpenAI API key (optional)
+### 2. Optional: install test dependencies
 
 ```bash
-export OPENAI_API_KEY="sk-..."
+pip install -r requirements-dev.txt
 ```
 
-If the key is not set, the baseline agent automatically runs in **heuristic mode** —
-no API calls required.
+### 3. Configure environment
 
----
-
-## 🤖 Run the Baseline Agent
+Copy `.env.example` values into your environment as needed:
 
 ```bash
-python agent/baseline_agent.py
+OPENAI_API_KEY=sk-your-openai-compatible-key
+HF_TOKEN=hf_your_token_here
+API_BASE_URL=https://api.openai.com/v1
+MODEL_NAME=gpt-4o-mini
+SEED=42
+USE_LLM=false
 ```
 
-Example output:
+## Local run instructions
 
-```
-08:15:57 [INFO] === AI Business Growth Baseline Agent ===
-08:15:57 [INFO] Mode: Heuristic (no API key)
-
---- Task 1 ---
-08:15:57 [INFO] Step  1 | action=add_hashtags          | reward=+0.000 | done=False
-08:15:57 [INFO] Step  3 | action=generate_post         | reward=+0.544 | done=False
-08:15:57 [INFO] Step  9 | action=run_ad                | reward=+1.400 | done=True
-
-============================================================
-Task     Steps    Score       Goal        Total Reward
-------------------------------------------------------------
-Task 1    9        0.8200      ✓           +3.5310
-Task 2    12       0.5491      ✗           +0.8663
-Task 3    4        0.7663      ✓           +2.4175
-============================================================
-```
-
----
-
-## 🐍 Use the Environment Directly
-
-```python
-from env.business_env import BusinessEnv
-from env.models.schemas import Action, ActionType
-
-# Task 1: Social Media Growth
-env = BusinessEnv(task_id=1, seed=42)
-obs = env.reset()
-print(obs.metrics)          # followers=500, engagement_rate=0.02
-
-action = Action(action_type=ActionType.GENERATE_POST, parameters={"quality": 5})
-result = env.step(action)
-print(result.reward.value)  # positive progress reward
-print(result.observation.metrics.followers)  # followers increased
-
-# Check full state
-state = env.state()
-print(state["task_state"])
-```
-
----
-
-## 🖥️ Run the Interactive CLI Agent
+### Deterministic inference run
 
 ```bash
-python main.py
+python inference.py
 ```
 
----
-
-## 🧪 Run Tests
+### LLM-backed inference run
 
 ```bash
-python -m pytest tests/ -v
+USE_LLM=true HF_TOKEN=hf_your_token_here python inference.py
 ```
 
-Tests use `unittest.mock` — no real API calls, no API key needed.
-
----
-
-## 🐳 Docker
+### Run tests
 
 ```bash
-# Build
-docker build -f deployment/Dockerfile -t ai-business-growth .
-
-# Run (heuristic mode, no API key needed)
-docker run ai-business-growth
-
-# Run with LLM mode
-docker run -e OPENAI_API_KEY=sk-... ai-business-growth
+python -m pytest tests -v
 ```
 
----
+## Docker run instructions
 
-## 📋 Baseline Results (Heuristic Agent)
+Build image:
 
-| Task | Difficulty | Max Steps | Score | Goal Reached |
-|------|-----------|-----------|-------|-------------|
-| Social Media Growth | Easy | 10 | ~0.82 | ✓ |
-| Review Management | Medium | 12 | ~0.55 | ✗ |
-| Revenue Optimization | Hard | 15 | ~0.77 | ✓ |
-
----
-
-## 🔑 Configuration
-
-Edit `config/openenv.yaml` to customise task targets, model, and logging:
-
-```yaml
-tasks:
-  task1:
-    target:
-      followers: 1000
-      engagement_rate: 0.05
-agent:
-  model: "gpt-4o-mini"
-  temperature: 0.0
+```bash
+docker build -t ai-business-growth .
 ```
 
----
+Run deterministic mode:
 
-## 📦 Dependencies
+```bash
+docker run --rm ai-business-growth
+```
 
-| Package | Purpose |
-|---------|---------|
-| `openai>=1.30.0` | LLM agent mode |
-| `pydantic>=2.0.0` | Typed schemas (Action, Observation, Reward) |
-| `pyyaml>=6.0` | Config loading |
-| `pytest>=7.0.0` | Testing |
+Run LLM mode:
+
+```bash
+docker run --rm \
+  -e USE_LLM=true \
+  -e HF_TOKEN=hf_your_token_here \
+  -e API_BASE_URL=https://api.openai.com/v1 \
+  -e MODEL_NAME=gpt-4o-mini \
+  ai-business-growth
+```
+
+## Hugging Face Spaces deployment
+
+Use a **Docker Space**.
+
+1. Create a Space with SDK set to `Docker`.
+2. Push this repository (root `Dockerfile` is used by Spaces).
+3. Configure secrets:
+   - `HF_TOKEN` (required only if `USE_LLM=true`)
+4. Configure variables (optional):
+   - `USE_LLM=false`
+   - `API_BASE_URL=https://api.openai.com/v1`
+   - `MODEL_NAME=gpt-4o-mini`
+   - `SEED=42`
+5. Confirm startup logs show `[START]` and completion logs show `[END]`.
+
+## Error behavior
+
+If initialization or runtime fails:
+
+- `inference.py` emits a `[STEP]` payload with an `error` field
+- `done` is set to `true`
+- reward is emitted as `"0.00"`
+- `[END]` is always printed
+
+This prevents evaluator hangs and keeps output parseable.
+
+## Reproducibility
+
+Determinism controls:
+
+- fixed default `SEED=42`
+- deterministic heuristic fallback policy
+- `temperature=0.0` for LLM action selection
+- no wall-clock based randomness in environment transitions
+
+Reproduce baseline output:
+
+```bash
+SEED=42 USE_LLM=false python inference.py
+```
+
+## Submission checklist
+
+- [x] Root `inference.py` exists
+- [x] `API_BASE_URL` default implemented
+- [x] `MODEL_NAME` default implemented
+- [x] `HF_TOKEN` validation implemented
+- [x] OpenAI Python client is the only LLM SDK used in runtime path
+- [x] Output contract `[START]` / `[STEP]` / `[END]` implemented
+- [x] Lowercase JSON booleans guaranteed
+- [x] Rewards formatted to 2 decimals
+- [x] `[END]` always emitted, including error path
+- [x] Root Dockerfile included for Hugging Face Spaces

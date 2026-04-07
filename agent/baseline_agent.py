@@ -3,12 +3,12 @@
 
 Modes
 -----
-* LLM mode  — uses Gemini 1.5 Flash via GOOGLE_API_KEY (when the key is set).
-* Heuristic mode — runs a smart rule-based policy with no API calls.
+* LLM mode  - uses OpenAI-compatible chat completions when API key is set.
+* Heuristic mode - runs a rule-based policy with no API calls.
 
 Usage
 -----
-    export GOOGLE_API_KEY="..."   # optional; falls back to heuristic
+    export OPENAI_API_KEY="..."   # optional; falls back to heuristic
     python agent/baseline_agent.py
 """
 
@@ -30,7 +30,7 @@ from agent.action_parser import (
     format_observation_for_llm,
     parse_action_from_text,
 )
-from agent.gemini_client import create_gemini_client
+from agent.openai_client import create_openai_client
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -96,8 +96,8 @@ class BaselineAgent:
     Parameters
     ----------
     task_id   : 1, 2, or 3
-    use_llm   : use Gemini when True and GOOGLE_API_KEY is set
-    model     : Gemini model name (default: "gemini-1.5-flash")
+    use_llm   : use OpenAI-compatible completion when True and OPENAI_API_KEY is set
+    model     : model name (default: "gpt-4o-mini")
     seed      : environment seed for reproducibility
     """
 
@@ -105,23 +105,26 @@ class BaselineAgent:
         self,
         task_id: int,
         use_llm: bool = True,
-        model: str = "gemini-1.5-flash",
+        model: str = "gpt-4o-mini",
         seed: int = 42,
     ) -> None:
         self.task_id = task_id
         self.model = model
         self.seed = seed
 
-        api_key = os.environ.get("GOOGLE_API_KEY", "")
+        api_key = os.environ.get("OPENAI_API_KEY", "")
         self.use_llm = use_llm and bool(api_key)
         self._client = None
 
         if self.use_llm:
             try:
-                self._client = create_gemini_client(api_key=api_key)
-            except ImportError:
+                self._client = create_openai_client(
+                    api_key=api_key,
+                    base_url=os.environ.get("API_BASE_URL") or None,
+                )
+            except Exception:
                 log.warning(
-                    "google-generativeai package not installed — falling back to heuristic mode."
+                    "OpenAI client is unavailable - falling back to heuristic mode."
                 )
                 self.use_llm = False
 
@@ -231,9 +234,14 @@ class BaselineAgent:
 
 def main() -> None:
     log.info("=== AI Business Growth Baseline Agent ===")
-    api_key = os.environ.get("GOOGLE_API_KEY", "")
+    api_key = os.environ.get("OPENAI_API_KEY", "")
     log.info(
-        "Mode: %s", "LLM (Gemini 1.5 Flash)" if api_key else "Heuristic (no API key)"
+        "Mode: %s",
+        (
+            f"LLM ({os.environ.get('MODEL_NAME', 'gpt-4o-mini')})"
+            if api_key
+            else "Heuristic (no API key)"
+        ),
     )
 
     results = []
