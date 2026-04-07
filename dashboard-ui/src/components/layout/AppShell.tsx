@@ -64,7 +64,7 @@ export function AppShell({ activePage, onPageChange, theme, onToggleTheme, child
             <p className="mt-2 text-sm text-muted-foreground">
               Double down on high-leverage content, fast review replies, and one focused revenue move.
             </p>
-            <Button className="mt-4 w-full" variant="default">
+            <Button className="mt-4 w-full" variant="default" onClick={() => onPageChange('overview')}>
               Open plan <ArrowRight className="h-4 w-4" />
             </Button>
           </div>

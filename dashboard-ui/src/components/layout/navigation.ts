@@ -1,4 +1,4 @@
-import { BarChart3, Bot, FileText, GaugeCircle, LayoutDashboard, MessageSquareMore, Sparkles } from 'lucide-react';
+import { Bot, FileText, GaugeCircle, LayoutDashboard, MessageSquareMore, Sparkles } from 'lucide-react';
 import type { NavKey } from '@/types';
 
 export const navItems: { key: NavKey; label: string; icon: typeof LayoutDashboard }[] = [

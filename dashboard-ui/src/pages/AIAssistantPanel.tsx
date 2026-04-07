@@ -1,6 +1,6 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, SendHorizonal } from 'lucide-react';
+import { Bot, SendHorizonal, Volume2, VolumeX } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +15,8 @@ interface AIAssistantPanelProps {
 
 export function AIAssistantPanel({ messages, loading, onSend }: AIAssistantPanelProps) {
   const [problem, setProblem] = useState('');
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const ordered = useMemo(() => [...messages], [messages]);
 
@@ -27,6 +29,27 @@ export function AIAssistantPanel({ messages, loading, onSend }: AIAssistantPanel
     setProblem('');
     await onSend(value);
   };
+
+  const handleSpeak = useCallback((message: AssistantMessage) => {
+    if (!('speechSynthesis' in window)) return;
+
+    if (speakingId === message.id) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const text = [message.content, ...(message.bullets ?? [])].join('. ');
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.onend = () => setSpeakingId(null);
+    utterance.onerror = () => setSpeakingId(null);
+    utteranceRef.current = utterance;
+    setSpeakingId(message.id);
+    window.speechSynthesis.speak(utterance);
+  }, [speakingId]);
 
   return (
     <div className="space-y-5">
@@ -72,7 +95,19 @@ export function AIAssistantPanel({ messages, loading, onSend }: AIAssistantPanel
           >
             <div className="flex items-center justify-between gap-2">
               <Badge variant={message.role === 'assistant' ? 'success' : 'outline'}>{message.role === 'assistant' ? 'AI assistant' : 'You'}</Badge>
-              <span className="text-xs text-muted-foreground">{message.timestamp}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{message.timestamp}</span>
+                {message.role === 'assistant' && 'speechSynthesis' in window && (
+                  <button
+                    type="button"
+                    aria-label={speakingId === message.id ? 'Stop speaking' : 'Read aloud'}
+                    onClick={() => handleSpeak(message)}
+                    className="rounded-full p-1 text-muted-foreground transition hover:text-primary"
+                  >
+                    {speakingId === message.id ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                  </button>
+                )}
+              </div>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-foreground">{message.content}</p>
             {message.bullets?.length ? (

@@ -175,19 +175,21 @@ function AppContent() {
         </motion.div>
       </AppShell>
 
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="subtle" className="fixed bottom-24 right-4 z-40 rounded-full px-4 py-2 lg:bottom-6 lg:right-6">
-            Reply Preview
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <h3 className="text-xl font-semibold">AI Reply Preview</h3>
-          <p className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-muted-foreground">
-            {replyPreview || 'Select any review and click Use AI Reply to preview it here.'}
-          </p>
-        </DialogContent>
-      </Dialog>
+      {replyPreview && (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="subtle" className="fixed bottom-24 right-4 z-40 rounded-full px-4 py-2 lg:bottom-6 lg:right-6">
+              Reply Preview
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <h3 className="text-xl font-semibold">AI Reply Preview</h3>
+            <p className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-muted-foreground">
+              {replyPreview}
+            </p>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <ToastViewport />
     </>
