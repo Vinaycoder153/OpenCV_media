@@ -410,9 +410,14 @@ if _STATIC_DIR.exists():
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
-        file_path = _STATIC_DIR / full_path
-        if file_path.is_file():
-            return FileResponse(str(file_path))
+        # Resolve the requested path against the static root and ensure it does not escape.
+        resolved_path = (_STATIC_DIR / full_path).resolve()
+        try:
+            common_root = os.path.commonpath([str(resolved_path), str(_STATIC_DIR.resolve())])
+        except ValueError:
+            common_root = ""
+        if resolved_path.is_file() and common_root == str(_STATIC_DIR.resolve()):
+            return FileResponse(str(resolved_path))
         return FileResponse(str(_STATIC_DIR / "index.html"))
 
 else:
