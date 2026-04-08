@@ -1,3 +1,13 @@
+---
+title: AI Business Growth Agent
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
 # AI Business Growth OpenEnv — Hackathon Edition
 
 **Production-ready OpenEnv-style reinforcement learning environment for small business decision-making. Deterministic, low-resource, fully compliant with Meta PyTorch OpenEnv Hackathon requirements.**
