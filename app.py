@@ -404,6 +404,7 @@ async def health() -> Dict[str, str]:
 # ---------------------------------------------------------------------------
 
 _STATIC_DIR = Path(__file__).parent / "dashboard-ui" / "dist"
+_STATIC_ROOT = _STATIC_DIR.resolve()
 
 if _STATIC_DIR.exists():
     app.mount("/assets", StaticFiles(directory=str(_STATIC_DIR / "assets")), name="assets")
@@ -411,14 +412,15 @@ if _STATIC_DIR.exists():
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         # Resolve the requested path against the static root and ensure it does not escape.
-        resolved_path = (_STATIC_DIR / full_path).resolve()
+        resolved_path = (_STATIC_ROOT / full_path).resolve()
+        static_root_str = str(_STATIC_ROOT)
         try:
-            common_root = os.path.commonpath([str(resolved_path), str(_STATIC_DIR.resolve())])
+            common_root = os.path.commonpath([str(resolved_path), static_root_str])
         except ValueError:
             common_root = ""
-        if resolved_path.is_file() and common_root == str(_STATIC_DIR.resolve()):
+        if resolved_path.is_file() and common_root == static_root_str:
             return FileResponse(str(resolved_path))
-        return FileResponse(str(_STATIC_DIR / "index.html"))
+        return FileResponse(str(_STATIC_ROOT / "index.html"))
 
 else:
     log.warning("Static frontend not found at %s — UI will not be served.", _STATIC_DIR)
