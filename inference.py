@@ -45,6 +45,16 @@ TASK_NAME = "Ai_business_Environment"
 MAX_STEPS = 10
 SEED = 42
 
+# Heuristic/default action parameter values
+_DEFAULT_POST_QUALITY = 5
+_DEFAULT_HASHTAG_COUNT = 8
+_DEFAULT_AD_BUDGET = 1800
+_DEFAULT_CAMPAIGN_BUDGET = 4000
+_DEFAULT_CAMPAIGN_BUDGET_EMAIL = 2500
+_DEFAULT_DISCOUNT_VALUE = 10
+_DEFAULT_BUNDLE_PRICE = 210.0
+_DEFAULT_BUNDLE_ITEMS = ["coffee", "snack"]
+
 log = logging.getLogger("inference")
 
 # ---------------------------------------------------------------------------
@@ -115,7 +125,7 @@ def _translate_to_action(kind: str, eid: str, val: str) -> Optional[Action]:
     """Map a click/fill tuple to a BusinessEnv Action."""
     mapping: Dict[str, Action] = {
         # Task 1
-        "generate_post": Action(action_type=ActionType.GENERATE_POST, parameters={"quality": 5}),
+        "generate_post": Action(action_type=ActionType.GENERATE_POST, parameters={"quality": _DEFAULT_POST_QUALITY}),
         "no_op": Action(action_type=ActionType.NO_OP, parameters={}),
     }
 
@@ -124,32 +134,32 @@ def _translate_to_action(kind: str, eid: str, val: str) -> Optional[Action]:
 
     # fill-based translations
     if eid == "generate_post_quality":
-        return Action(action_type=ActionType.GENERATE_POST, parameters={"quality": _int(val, 5)})
+        return Action(action_type=ActionType.GENERATE_POST, parameters={"quality": _int(val, _DEFAULT_POST_QUALITY)})
     if eid == "add_hashtags_count":
-        return Action(action_type=ActionType.ADD_HASHTAGS, parameters={"count": _int(val, 8)})
+        return Action(action_type=ActionType.ADD_HASHTAGS, parameters={"count": _int(val, _DEFAULT_HASHTAG_COUNT)})
     if eid == "schedule_post_timing":
         return Action(action_type=ActionType.SCHEDULE_POST, parameters={"timing": val or "peak"})
     if eid == "run_ad_budget":
-        return Action(action_type=ActionType.RUN_AD, parameters={"budget": _int(val, 1800)})
+        return Action(action_type=ActionType.RUN_AD, parameters={"budget": _int(val, _DEFAULT_AD_BUDGET)})
     if eid == "reply_review_tone":
         return Action(action_type=ActionType.REPLY_REVIEW, parameters={"tone": val or "professional"})
     if eid == "request_review_channel":
         return Action(action_type=ActionType.REQUEST_REVIEW, parameters={"channel": val or "in-person"})
     if eid == "offer_discount_value":
-        return Action(action_type=ActionType.OFFER_DISCOUNT, parameters={"value": _int(val, 10)})
+        return Action(action_type=ActionType.OFFER_DISCOUNT, parameters={"value": _int(val, _DEFAULT_DISCOUNT_VALUE)})
     if eid == "improve_service_area":
         return Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": val or "quality"})
     if eid == "run_campaign_type":
-        return Action(action_type=ActionType.RUN_CAMPAIGN, parameters={"type": val or "social", "budget": 4000})
+        return Action(action_type=ActionType.RUN_CAMPAIGN, parameters={"type": val or "social", "budget": _DEFAULT_CAMPAIGN_BUDGET})
     if eid == "add_offer_discount_pct":
-        return Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": _int(val, 10)})
+        return Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": _int(val, _DEFAULT_DISCOUNT_VALUE)})
     if eid == "launch_bundle_price":
         return Action(
             action_type=ActionType.LAUNCH_BUNDLE,
-            parameters={"items": ["coffee", "snack"], "bundle_price": float(val) if val else 210.0},
+            parameters={"items": _DEFAULT_BUNDLE_ITEMS, "bundle_price": float(val) if val else _DEFAULT_BUNDLE_PRICE},
         )
     if eid == "change_price_direction":
-        return Action(action_type=ActionType.CHANGE_PRICE, parameters={"direction": val or "up", "pct": 10})
+        return Action(action_type=ActionType.CHANGE_PRICE, parameters={"direction": val or "up", "pct": _DEFAULT_DISCOUNT_VALUE})
 
     return None
 
@@ -213,25 +223,25 @@ def _llm_action(task_id: int, obs: Observation) -> Optional[Action]:
 # ---------------------------------------------------------------------------
 _HEURISTICS: Dict[int, List[Action]] = {
     1: [
-        Action(action_type=ActionType.ADD_HASHTAGS, parameters={"count": 8}),
+        Action(action_type=ActionType.ADD_HASHTAGS, parameters={"count": _DEFAULT_HASHTAG_COUNT}),
         Action(action_type=ActionType.SCHEDULE_POST, parameters={"timing": "peak"}),
-        Action(action_type=ActionType.GENERATE_POST, parameters={"quality": 5}),
-        Action(action_type=ActionType.RUN_AD, parameters={"budget": 1800}),
+        Action(action_type=ActionType.GENERATE_POST, parameters={"quality": _DEFAULT_POST_QUALITY}),
+        Action(action_type=ActionType.RUN_AD, parameters={"budget": _DEFAULT_AD_BUDGET}),
     ],
     2: [
         Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "quality"}),
         Action(action_type=ActionType.REPLY_REVIEW, parameters={"tone": "professional"}),
         Action(action_type=ActionType.REQUEST_REVIEW, parameters={"channel": "in-person"}),
-        Action(action_type=ActionType.OFFER_DISCOUNT, parameters={"value": 10}),
+        Action(action_type=ActionType.OFFER_DISCOUNT, parameters={"value": _DEFAULT_DISCOUNT_VALUE}),
     ],
     3: [
-        Action(action_type=ActionType.RUN_CAMPAIGN, parameters={"type": "social", "budget": 4000}),
-        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 10}),
+        Action(action_type=ActionType.RUN_CAMPAIGN, parameters={"type": "social", "budget": _DEFAULT_CAMPAIGN_BUDGET}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": _DEFAULT_DISCOUNT_VALUE}),
         Action(
             action_type=ActionType.LAUNCH_BUNDLE,
-            parameters={"items": ["coffee", "snack"], "bundle_price": 210.0},
+            parameters={"items": _DEFAULT_BUNDLE_ITEMS, "bundle_price": _DEFAULT_BUNDLE_PRICE},
         ),
-        Action(action_type=ActionType.RUN_CAMPAIGN, parameters={"type": "email", "budget": 2500}),
+        Action(action_type=ActionType.RUN_CAMPAIGN, parameters={"type": "email", "budget": _DEFAULT_CAMPAIGN_BUDGET_EMAIL}),
     ],
 }
 
