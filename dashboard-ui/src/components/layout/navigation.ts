@@ -1,4 +1,4 @@
-import { Bot, FileText, GaugeCircle, LayoutDashboard, MessageSquareMore, Sparkles } from 'lucide-react';
+import { Bot, FileText, FlaskConical, GaugeCircle, LayoutDashboard, MessageSquareMore, Sparkles } from 'lucide-react';
 import type { NavKey } from '@/types';
 
 export const navItems: { key: NavKey; label: string; icon: typeof LayoutDashboard }[] = [
@@ -8,6 +8,7 @@ export const navItems: { key: NavKey; label: string; icon: typeof LayoutDashboar
   { key: 'reviews', label: 'Reviews', icon: MessageSquareMore },
   { key: 'reports', label: 'Reports', icon: FileText },
   { key: 'auto', label: 'Auto Mode', icon: GaugeCircle },
+  { key: 'simulator', label: 'Env Simulator', icon: FlaskConical },
 ];
 
 export const navSummary = [

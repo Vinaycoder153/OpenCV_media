@@ -9,6 +9,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { useThemeMode } from '@/hooks/useThemeMode';
 import { AIAssistantPanel } from '@/pages/AIAssistantPanel';
 import { DashboardOverview } from '@/pages/DashboardOverview';
+import { EnvSimulator } from '@/pages/EnvSimulator';
 import { ReportsInsights } from '@/pages/ReportsInsights';
 import { ReviewAnalyzer } from '@/pages/ReviewAnalyzer';
 import { SocialContentGenerator } from '@/pages/SocialContentGenerator';
@@ -64,12 +65,16 @@ function AppContent() {
     assistantLoading,
     reportLoading,
     autoModeLoading,
+    simulationLoading,
+    simulationResult,
+    festivals,
     refresh,
     generateContentDraft,
     analyzeReviews,
     sendAssistantMessage,
     loadWeeklyInsight,
     runAutoMode,
+    startSimulation,
   } = useDashboardData();
   const { pushToast } = useToast();
 
@@ -85,10 +90,12 @@ function AppContent() {
           snapshot={snapshot}
           loading={isInitialLoading}
           refreshing={isRefreshing}
+          festivals={festivals}
           onRefresh={async () => {
             await refresh();
             pushToast({ title: 'Dashboard refreshed', description: 'Latest metrics synced successfully.', tone: 'success' });
           }}
+          onNavigate={setActivePage}
         />
       );
       break;
@@ -159,6 +166,18 @@ function AppContent() {
           onRun={async (days) => {
             await runAutoMode(days);
             pushToast({ title: 'Autonomous mode completed', description: `${days}-day simulation executed with transparent decision logs.`, tone: 'success' });
+          }}
+        />
+      );
+      break;
+    case 'simulator':
+      page = (
+        <EnvSimulator
+          loading={simulationLoading}
+          result={simulationResult}
+          onRun={async (taskId, days) => {
+            await startSimulation(taskId, days);
+            pushToast({ title: 'Simulation complete', description: `Task ${taskId} ran ${days} steps with full OAR transparency.`, tone: 'success' });
           }}
         />
       );

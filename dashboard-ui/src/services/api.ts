@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { mockDashboard } from '@/data/mock';
-import type { AssistantMessage, AutoModeResult, ContentResult, DashboardSnapshot, ImpactMetric, ReviewItem, WeeklyReport } from '@/types';
+import { mockDashboard, mockSimulation, mockFestivals } from '@/data/mock';
+import type { AssistantMessage, AutoModeResult, ContentResult, DashboardSnapshot, FestivalEvent, ImpactMetric, ReviewItem, SimulationResult, WeeklyReport } from '@/types';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
@@ -155,18 +155,22 @@ function createContentResult(input: Record<string, string>): ContentResult {
   const businessType = input.businessType?.toLowerCase() || 'business';
   const audience = input.audience?.toLowerCase() || 'customers';
   const tone = input.tone?.toLowerCase() || 'confident';
+  const platform = (input as Record<string, string>).platform?.toLowerCase() || 'instagram';
+
+  const platformTag = platform === 'whatsapp' ? '#WhatsAppBusiness' : platform === 'facebook' ? '#FacebookMarketing' : platform === 'reels' ? '#InstagramReels' : '#InstagramMarketing';
 
   return {
     post: `A better ${businessType} experience starts with knowing what ${audience} actually care about. We built today's offer around speed, quality, and a smoother visit.`,
-    caption: `Built for ${audience} who want a smarter ${businessType} moment. ${tone === 'premium' ? 'Premium service, clean execution, and a sharp offer.' : 'Fast, simple, and designed to convert.'}`,
+    caption: `Built for ${audience} who want a smarter ${businessType} moment. ${tone === 'premium' ? 'Premium service, clean execution, and a sharp offer.' : 'Fast, simple, and designed to convert.'} ${platform === 'reels' ? '🎬 Swipe for the full story.' : ''}`,
     hashtags: normalizeHashtags([
       '#AIBusinessGrowth',
-      '#SaaSStartup',
       '#SmallBusiness',
       `#${businessType.replace(/\s+/g, '')}`,
       '#LocalBusiness',
+      '#IndiaStartup',
+      platformTag,
     ]),
-    reelIdea: `Show a ${businessType} transformation in 3 scenes: before, process, and the customer reaction. Close with a strong CTA for ${audience}.`,
+    reelIdea: `Show a ${businessType} transformation in 3 scenes: before, process, and the customer reaction. Close with a strong CTA for ${audience}. Optimized for ${platform}.`,
   };
 }
 
@@ -330,5 +334,28 @@ export async function runAutonomousMode(input?: { days?: number }): Promise<Auto
   } catch {
     await delay(850);
     return createAutoModeSimulation(input?.days ?? 14);
+  }
+}
+
+export async function runSimulation(input: { task_id: number; days: number }): Promise<SimulationResult> {
+  try {
+    const response = await api.post('/simulate/run', input);
+    const data = response.data;
+    if (typeof data === 'object' && data !== null && 'task_id' in data) {
+      return data as SimulationResult;
+    }
+    return mockSimulation(input.task_id, input.days);
+  } catch {
+    await delay(800);
+    return mockSimulation(input.task_id, input.days);
+  }
+}
+
+export async function fetchFestivals(): Promise<FestivalEvent[]> {
+  try {
+    const response = await api.get('/festivals');
+    return Array.isArray(response.data) ? response.data : mockFestivals;
+  } catch {
+    return mockFestivals;
   }
 }

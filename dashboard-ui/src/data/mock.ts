@@ -1,4 +1,4 @@
-import type { DashboardSnapshot } from '@/types';
+import type { DashboardSnapshot, FestivalEvent, SimulationResult } from '@/types';
 
 export const mockDashboard: DashboardSnapshot = {
   kpis: [
@@ -191,3 +191,76 @@ export const mockDashboard: DashboardSnapshot = {
     ],
   },
 };
+
+// ── Simulation mock data ─────────────────────────────────────────────────────
+
+const _simulationData: Record<number, SimulationResult> = {
+  1: {
+    task_id: 1,
+    task_description: 'Social Media Growth — grow followers to 1,000+ and engagement to 5%+',
+    valid_actions: ['generate_post', 'add_hashtags', 'schedule_post', 'run_ad'],
+    steps: [
+      { step: 1, day: 1, action: 'schedule_post', rationale: 'Engagement below 4.5% threshold — peak-hour scheduling maximizes content reach before volume investment.', expected: '+8% engagement from timing optimization', reward: 0.18, metrics: { followers: 545, engagement_rate: 0.028 } },
+      { step: 2, day: 2, action: 'add_hashtags', rationale: 'Hashtag quality score 0.5 — niche + trending tag mix improves organic discovery by 2.4x.', expected: '+12% reach expansion from hashtag quality improvement', reward: 0.12, metrics: { followers: 590, engagement_rate: 0.031 } },
+      { step: 3, day: 3, action: 'generate_post', rationale: 'Timing and hashtags optimized — high-quality content now compounds retention and shares.', expected: 'Sustained engagement and organic follower growth', reward: 0.22, metrics: { followers: 650, engagement_rate: 0.036 } },
+      { step: 4, day: 5, action: 'run_ad', rationale: 'Follower growth lagging target pace — controlled ₹1,500 ad spend accelerates discovery at ₹7.5 per follower.', expected: 'Faster reach and follower acquisition (+200 followers)', reward: 0.28, metrics: { followers: 780, engagement_rate: 0.041 } },
+      { step: 5, day: 7, action: 'generate_post', rationale: 'Ad created momentum — quality content sustains algorithmic boost and converts reach to followers.', expected: '+15% organic follower growth from content-ad synergy', reward: 0.31, metrics: { followers: 900, engagement_rate: 0.048 } },
+      { step: 6, day: 9, action: 'schedule_post', rationale: 'Near 1,000 followers — final timing push to cross 5% engagement threshold and complete goal.', expected: 'Cross 5% engagement and 1,000 follower targets', reward: 0.35, metrics: { followers: 980, engagement_rate: 0.052 } },
+    ],
+    before: { followers: 500, engagement_rate: 0.02 },
+    after: { followers: 980, engagement_rate: 0.052 },
+    score: 0.82,
+    period_days: 10,
+  },
+  2: {
+    task_id: 2,
+    task_description: 'Review Management — raise average rating to 4.0+ and positive sentiment to 65%+',
+    valid_actions: ['reply_review', 'request_review', 'offer_discount', 'improve_service'],
+    steps: [
+      { step: 1, day: 1, action: 'improve_service', rationale: 'Rating at 3.1 — service quality improvements create durable lift vs. superficial review tactics.', expected: '+0.3 rating improvement from root-cause service fixes', reward: 0.20, metrics: { avg_rating: 3.3, positive_reviews: 8 } },
+      { step: 2, day: 2, action: 'reply_review', rationale: 'Public responses to all reviews show responsiveness — converts neutral audience to loyal customers.', expected: '+0.1 rating from enhanced trust signals', reward: 0.15, metrics: { avg_rating: 3.5, positive_reviews: 10 } },
+      { step: 3, day: 4, action: 'request_review', rationale: 'Positive review share below 55% — in-person review requests post-service achieve 40% conversion rate.', expected: '+3 new positive reviews this week', reward: 0.18, metrics: { avg_rating: 3.7, positive_reviews: 13 } },
+      { step: 4, day: 6, action: 'reply_review', rationale: 'Sustained professional responses protect trust velocity and future platform conversion rate.', expected: '+0.2 sentiment velocity improvement', reward: 0.22, metrics: { avg_rating: 3.9, positive_reviews: 15 } },
+      { step: 5, day: 8, action: 'request_review', rationale: 'Above 3.8 rating — requesting reviews now achieves higher acceptance from satisfied customers.', expected: '+5 new reviews from recently satisfied customers', reward: 0.25, metrics: { avg_rating: 4.1, positive_reviews: 19 } },
+    ],
+    before: { avg_rating: 3.1, positive_reviews: 6, total_reviews: 12 },
+    after: { avg_rating: 4.1, positive_reviews: 19, total_reviews: 26 },
+    score: 0.78,
+    period_days: 10,
+  },
+  3: {
+    task_id: 3,
+    task_description: 'Revenue Optimization — grow monthly revenue to ₹1,20,000+ while keeping satisfaction ≥ 0.7',
+    valid_actions: ['change_price', 'add_offer', 'run_campaign', 'launch_bundle'],
+    steps: [
+      { step: 1, day: 1, action: 'run_campaign', rationale: 'Revenue ₹80K vs target ₹1.2L — social campaign delivers fastest measurable demand lift at 3.5x ROI.', expected: '+₹14,000 revenue from ₹4,000 social campaign spend', reward: 0.24, metrics: { monthly_revenue: 94000, daily_orders: 28 } },
+      { step: 2, day: 3, action: 'launch_bundle', rationale: 'AOV at ₹120 — coffee+snack bundle at ₹220 raises basket size 18% without heavy discount dependency.', expected: '+12% AOV uplift from bundle adoption', reward: 0.28, metrics: { monthly_revenue: 101000, daily_orders: 30 } },
+      { step: 3, day: 5, action: 'add_offer', rationale: 'Light 10% offer stimulates conversion in off-peak windows while preserving 90% of margin.', expected: '+₹8,000 revenue from targeted offer campaign', reward: 0.19, metrics: { monthly_revenue: 108000, daily_orders: 33 } },
+      { step: 4, day: 8, action: 'run_campaign', rationale: 'Email retargeting targets existing customer base at ₹400 CPM vs ₹2,400 for cold audiences.', expected: '+₹12,000 from high-conversion retention campaign', reward: 0.30, metrics: { monthly_revenue: 116000, daily_orders: 36 } },
+      { step: 5, day: 10, action: 'launch_bundle', rationale: 'Premium weekend bundle compounds AOV gains — targets high-value Saturday traffic for final revenue push.', expected: 'Cross ₹1,20,000 revenue threshold and complete task', reward: 0.38, metrics: { monthly_revenue: 124000, daily_orders: 39 } },
+    ],
+    before: { monthly_revenue: 80000, daily_orders: 25, avg_order_value: 120.0 },
+    after: { monthly_revenue: 124000, daily_orders: 39, avg_order_value: 142.0 },
+    score: 0.86,
+    period_days: 10,
+  },
+};
+
+export function mockSimulation(taskId: number, days: number): SimulationResult {
+  const base = _simulationData[taskId] ?? _simulationData[1];
+  return {
+    ...base,
+    steps: base.steps.slice(0, days),
+    period_days: days,
+  };
+}
+
+// ── Festival mock data ───────────────────────────────────────────────────────
+
+export const mockFestivals: FestivalEvent[] = [
+  { name: 'Diwali', month: 10, day: 20, boost: 'HIGHEST traffic week — gift hampers, premium offers, loyalty rewards', date: '2025-10-20', days_until: 14 },
+  { name: 'Bhai Dooj', month: 10, day: 22, boost: 'Sibling combos, gifting push, sweet specials', date: '2025-10-22', days_until: 16 },
+  { name: 'Christmas', month: 12, day: 25, boost: 'Premium gifting, year-end celebration, party packages', date: '2025-12-25', days_until: 80 },
+  { name: 'Makar Sankranti', month: 1, day: 14, boost: 'Sweets, til-gur, kite themes; family gifting window', date: '2026-01-14', days_until: 100 },
+  { name: 'Holi', month: 3, day: 25, boost: 'Colour-themed menus, festive reels, family group visits', date: '2026-03-25', days_until: 170 },
+];

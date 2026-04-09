@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Iterable, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 _METRO_CITIES = {
@@ -22,6 +22,49 @@ _METRO_CITIES = {
     "ahmedabad",
     "noida",
 }
+
+# Indian festival calendar — approximate dates (month, day) and marketing relevance
+# Covers the full year so the system always has upcoming festival context.
+_INDIAN_FESTIVALS: List[Dict] = [
+    {"name": "Makar Sankranti", "month": 1, "day": 14, "boost": "sweets, til-gur, kite themes; family gifting window"},
+    {"name": "Republic Day", "month": 1, "day": 26, "boost": "patriotic offers, early-morning footfall spike"},
+    {"name": "Valentine's Day", "month": 2, "day": 14, "boost": "couple combos, dessert bundles, gifting push"},
+    {"name": "Holi", "month": 3, "day": 25, "boost": "colour-themed menus, festive reels, family group visits"},
+    {"name": "Gudi Padwa / Ugadi", "month": 3, "day": 30, "boost": "new-year offers, community events, sweet hampers"},
+    {"name": "Ram Navami", "month": 4, "day": 6, "boost": "devotional audience, sattvic menu highlights"},
+    {"name": "Eid ul-Fitr", "month": 4, "day": 10, "boost": "evening surge, halal offerings, family feasts, gift cards"},
+    {"name": "Mother's Day", "month": 5, "day": 11, "boost": "family brunch, gifting combos, emotional storytelling"},
+    {"name": "Eid al-Adha", "month": 6, "day": 17, "boost": "premium sharing platters, community dining"},
+    {"name": "Independence Day", "month": 8, "day": 15, "boost": "tricolour specials, patriotic reels, morning rush"},
+    {"name": "Janmashtami", "month": 8, "day": 16, "boost": "midnight snacks, dairy specials, festive decor reels"},
+    {"name": "Ganesh Chaturthi", "month": 9, "day": 5, "boost": "modak combos, 10-day promotions, family offerings"},
+    {"name": "Navratri", "month": 10, "day": 2, "boost": "fasting menus, garba nights, special dietary offers"},
+    {"name": "Dussehra", "month": 10, "day": 12, "boost": "festive launch window, premium bundles, gifting"},
+    {"name": "Diwali", "month": 10, "day": 20, "boost": "HIGHEST traffic week of year — gift hampers, premium offers, loyalty rewards"},
+    {"name": "Bhai Dooj", "month": 10, "day": 22, "boost": "sibling combos, gifting push, sweet specials"},
+    {"name": "Chhath Puja", "month": 10, "day": 28, "boost": "Bihar/UP audience, traditional items, community focus"},
+    {"name": "Guru Nanak Jayanti", "month": 11, "day": 5, "boost": "Punjabi cuisine, community charity tie-ins"},
+    {"name": "Christmas", "month": 12, "day": 25, "boost": "premium gifting, year-end celebration, party packages"},
+    {"name": "New Year's Eve", "month": 12, "day": 31, "boost": "party packages, countdown offers, premium reservations"},
+]
+
+
+def get_upcoming_festivals(n: int = 3) -> List[Dict]:
+    """Return the next *n* upcoming Indian festivals from today."""
+    today = date.today()
+    scored: List[Tuple[int, Dict]] = []
+    for fest in _INDIAN_FESTIVALS:
+        festival_date = date(today.year, fest["month"], fest["day"])
+        if festival_date < today:
+            # Use next year's date
+            try:
+                festival_date = date(today.year + 1, fest["month"], fest["day"])
+            except ValueError:
+                continue
+        days_until = (festival_date - today).days
+        scored.append((days_until, {**fest, "date": festival_date.isoformat(), "days_until": days_until}))
+    scored.sort(key=lambda x: x[0])
+    return [item for _, item in scored[:n]]
 
 
 @dataclass(frozen=True)
@@ -47,19 +90,23 @@ class BusinessContext:
     def season_signal(self) -> str:
         today = date.today()
         month = today.month
+        upcoming = get_upcoming_festivals(1)
+        festival_hint = ""
+        if upcoming and upcoming[0]["days_until"] <= 14:
+            festival_hint = f"; {upcoming[0]['name']} in {upcoming[0]['days_until']} days — {upcoming[0]['boost']}"
         if month in {1, 2}:
-            return "new-year momentum, weddings, gifting"
+            return f"new-year momentum, weddings, gifting{festival_hint}"
         if month in {3, 4}:
-            return "summer prep, exam season, local weekend traffic"
+            return f"summer prep, exam season, local weekend traffic{festival_hint}"
         if month in {5, 6}:
-            return "summer hydration, cooling offers, indoor experiences"
+            return f"summer hydration, cooling offers, indoor experiences{festival_hint}"
         if month in {7, 8}:
-            return "monsoon convenience, comfort menus, back-to-school demand"
+            return f"monsoon convenience, comfort menus, back-to-school demand{festival_hint}"
         if month in {9, 10}:
-            return "festive pre-heat, Navratri, Dussehra, premium upsells"
+            return f"festive pre-heat, Navratri, Dussehra, premium upsells{festival_hint}"
         if month in {11}:
-            return "Diwali recovery, gifting, retention campaigns"
-        return "holiday gifting, recap campaigns, year-end retention"
+            return f"Diwali recovery, gifting, retention campaigns{festival_hint}"
+        return f"holiday gifting, recap campaigns, year-end retention{festival_hint}"
 
     @property
     def channel_priority(self) -> List[str]:

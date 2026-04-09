@@ -1,6 +1,6 @@
 export type ThemeMode = 'dark' | 'light';
 
-export type NavKey = 'overview' | 'assistant' | 'content' | 'reviews' | 'reports' | 'auto';
+export type NavKey = 'overview' | 'assistant' | 'content' | 'reviews' | 'reports' | 'auto' | 'simulator';
 
 export interface KpiMetric {
   label: string;
@@ -112,4 +112,38 @@ export interface DashboardSnapshot {
   reviews: ReviewItem[];
   weeklyReport: WeeklyReport;
   autoMode: AutoModeResult;
+}
+
+// ── Simulation types ────────────────────────────────────────────────────────
+
+export interface SimulationStep {
+  step: number;
+  day: number;
+  action: string;
+  rationale: string;
+  expected: string;
+  reward: number;
+  metrics: Record<string, number>;
+}
+
+export interface SimulationResult {
+  task_id: number;
+  task_description: string;
+  valid_actions: string[];
+  steps: SimulationStep[];
+  before: Record<string, number>;
+  after: Record<string, number>;
+  score: number;
+  period_days: number;
+}
+
+// ── Festival types ───────────────────────────────────────────────────────────
+
+export interface FestivalEvent {
+  name: string;
+  month: number;
+  day: number;
+  boost: string;
+  date: string;
+  days_until: number;
 }

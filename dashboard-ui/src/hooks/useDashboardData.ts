@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchDashboardSnapshot, generateContent, askAssistant, analyzeReviewBatch, fetchWeeklyReport, runAutonomousMode } from '@/services/api';
-import { mockDashboard } from '@/data/mock';
-import type { AssistantMessage, AutoModeResult, ContentResult, DashboardSnapshot, ReviewItem, WeeklyReport } from '@/types';
+import { fetchDashboardSnapshot, generateContent, askAssistant, analyzeReviewBatch, fetchWeeklyReport, runAutonomousMode, runSimulation, fetchFestivals } from '@/services/api';
+import { mockDashboard, mockSimulation, mockFestivals } from '@/data/mock';
+import type { AssistantMessage, AutoModeResult, ContentResult, DashboardSnapshot, FestivalEvent, ReviewItem, SimulationResult, WeeklyReport } from '@/types';
 
 export interface GenerateContentInput {
   businessType: string;
@@ -18,6 +18,9 @@ export function useDashboardData() {
   const [assistantLoading, setAssistantLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [autoModeLoading, setAutoModeLoading] = useState(false);
+  const [simulationLoading, setSimulationLoading] = useState(false);
+  const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const [festivals, setFestivals] = useState<FestivalEvent[]>(mockFestivals);
 
   const loadSnapshot = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     mode === 'initial' ? setIsInitialLoading(true) : setIsRefreshing(true);
@@ -29,9 +32,19 @@ export function useDashboardData() {
     }
   }, []);
 
+  const loadFestivals = useCallback(async () => {
+    try {
+      const result = await fetchFestivals();
+      if (result.length > 0) setFestivals(result);
+    } catch {
+      // keep mock festivals
+    }
+  }, []);
+
   useEffect(() => {
     void loadSnapshot('initial');
-  }, [loadSnapshot]);
+    void loadFestivals();
+  }, [loadSnapshot, loadFestivals]);
 
   const contentResult = snapshot?.contentResult ?? mockDashboard.contentResult;
   const reviews = snapshot?.reviews ?? mockDashboard.reviews;
@@ -98,6 +111,22 @@ export function useDashboardData() {
     }
   }, [updateSnapshot]);
 
+  const startSimulation = useCallback(async (taskId: number, days: number): Promise<SimulationResult> => {
+    setSimulationLoading(true);
+    setSimulationResult(null);
+    try {
+      const result = await runSimulation({ task_id: taskId, days });
+      setSimulationResult(result);
+      return result;
+    } catch {
+      const fallback = mockSimulation(taskId, days);
+      setSimulationResult(fallback);
+      return fallback;
+    } finally {
+      setSimulationLoading(false);
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
     await loadSnapshot('refresh');
   }, [loadSnapshot]);
@@ -116,11 +145,15 @@ export function useDashboardData() {
     assistantLoading,
     reportLoading,
     autoModeLoading,
+    simulationLoading,
+    simulationResult,
+    festivals,
     refresh,
     generateContentDraft,
     analyzeReviews,
     sendAssistantMessage,
     loadWeeklyInsight,
     runAutoMode,
-  }), [assistantLoading, assistantMessages, autoMode, autoModeLoading, contentLoading, contentResult, generateContentDraft, isInitialLoading, isRefreshing, loadWeeklyInsight, refresh, reportLoading, reviews, reviewsLoading, runAutoMode, sendAssistantMessage, snapshot, weeklyReport, analyzeReviews]);
+    startSimulation,
+  }), [assistantLoading, assistantMessages, autoMode, autoModeLoading, contentLoading, contentResult, generateContentDraft, isInitialLoading, isRefreshing, loadWeeklyInsight, refresh, reportLoading, reviews, reviewsLoading, runAutoMode, sendAssistantMessage, snapshot, weeklyReport, analyzeReviews, simulationLoading, simulationResult, festivals, startSimulation]);
 }
