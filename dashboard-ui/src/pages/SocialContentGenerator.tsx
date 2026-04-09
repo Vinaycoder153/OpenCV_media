@@ -132,10 +132,3 @@ export function SocialContentGenerator({ contentResult, loading, onGenerate, onC
     </div>
   );
 }
-
-interface SocialContentGeneratorProps {
-  contentResult: ContentResult;
-  loading: boolean;
-  onGenerate: (input: { businessType: string; audience: string; tone: string }) => Promise<void>;
-  onCopy: (value: string, label: string) => Promise<void>;
-}

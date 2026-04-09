@@ -7,6 +7,7 @@ export interface GenerateContentInput {
   businessType: string;
   audience: string;
   tone: string;
+  platform?: string;
 }
 
 export function useDashboardData() {

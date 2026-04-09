@@ -151,11 +151,11 @@ function normalizeHashtags(values: string[]) {
     .map((item) => (item.startsWith('#') ? item : `#${item.replace(/^#+/, '')}`));
 }
 
-function createContentResult(input: Record<string, string>): ContentResult {
+function createContentResult(input: { businessType: string; audience: string; tone: string; platform?: string }): ContentResult {
   const businessType = input.businessType?.toLowerCase() || 'business';
   const audience = input.audience?.toLowerCase() || 'customers';
   const tone = input.tone?.toLowerCase() || 'confident';
-  const platform = (input as Record<string, string>).platform?.toLowerCase() || 'instagram';
+  const platform = input.platform?.toLowerCase() || 'instagram';
 
   const platformTag = platform === 'whatsapp' ? '#WhatsAppBusiness' : platform === 'facebook' ? '#FacebookMarketing' : platform === 'reels' ? '#InstagramReels' : '#InstagramMarketing';
 
@@ -285,7 +285,7 @@ export async function fetchDashboardSnapshot(): Promise<DashboardSnapshot> {
   }
 }
 
-export async function generateContent(input: { businessType: string; audience: string; tone: string }): Promise<ContentResult> {
+export async function generateContent(input: { businessType: string; audience: string; tone: string; platform?: string }): Promise<ContentResult> {
   try {
     const response = await api.post('/content/generate', input);
     return normalizeContentResult(response.data);

@@ -161,9 +161,3 @@ export function AIAssistantPanel({ messages, loading, onSend }: AIAssistantPanel
     </div>
   );
 }
-
-interface AIAssistantPanelProps {
-  messages: AssistantMessage[];
-  loading: boolean;
-  onSend: (problem: string) => Promise<void>;
-}

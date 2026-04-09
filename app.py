@@ -27,6 +27,19 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 log = logging.getLogger("app")
 
 # ---------------------------------------------------------------------------
+# Module-level constants shared across endpoint handlers
+# ---------------------------------------------------------------------------
+
+# Maps internal metric field names → (frontend key, display label, unit)
+_IMPACT_KEY_MAP: Dict[str, tuple] = {
+    "monthly_revenue": ("revenue", "Monthly Revenue", "INR"),
+    "engagement_rate": ("engagement", "Engagement Rate", "%"),
+    "avg_rating": ("rating", "Average Rating", "/5"),
+    "daily_orders": ("orders", "Daily Orders", "count"),
+    "followers": ("followers", "Social Followers", "count"),
+}
+
+# ---------------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------------
 
@@ -359,17 +372,10 @@ async def run_auto_mode(req: AutoModeRequest) -> Dict[str, Any]:
 
         # Aggregate impact across all 3 tasks, keyed by metric
         impact_map: Dict[str, Dict[str, Any]] = {}
-        key_map = {
-            "monthly_revenue": ("revenue", "Monthly Revenue", "INR"),
-            "engagement_rate": ("engagement", "Engagement Rate", "%"),
-            "avg_rating": ("rating", "Average Rating", "/5"),
-            "daily_orders": ("orders", "Daily Orders", "count"),
-            "followers": ("followers", "Social Followers", "count"),
-        }
         for _task_id, task_data in raw.get("impact", {}).items():
             before = task_data.get("before", {})
             after = task_data.get("after", {})
-            for field, (key, label, unit) in key_map.items():
+            for field, (key, label, unit) in _IMPACT_KEY_MAP.items():
                 if field in before and field in after and key not in impact_map:
                     b_val = before[field]
                     a_val = after[field]
