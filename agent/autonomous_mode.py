@@ -93,7 +93,8 @@ class AutonomousGrowthRunner:
     def _choose_action(self, task_id: int, obs: Observation) -> tuple[Action, str, str]:
         m = obs.metrics
         if task_id == 1:
-            if m.engagement_rate < 0.045:
+            schedule_count = obs.recent_actions.count(ActionType.SCHEDULE_POST.value)
+            if m.engagement_rate < 0.045 and schedule_count < 2:
                 return (
                     Action(
                         action_type=ActionType.SCHEDULE_POST,

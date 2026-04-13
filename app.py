@@ -349,20 +349,24 @@ async def run_auto_mode(req: AutoModeRequest) -> Dict[str, Any]:
 
         runner = AutonomousGrowthRunner(seed=42)
         raw = runner.run(days=days)
+        # Each task tracks only its own metrics; pull from the right task per field.
+        task_metric_map: Dict[int, Dict[str, tuple[str, str, str]]] = {
+            1: {"engagement_rate": ("engagement", "Engagement Rate", "%")},
+            2: {"avg_rating": ("rating", "Average Rating", "/5")},
+            3: {
+                "monthly_revenue": ("revenue", "Monthly Revenue", "INR"),
+                "daily_orders": ("orders", "Daily Orders", "count"),
+            },
+        }
+        impact_raw = raw.get("impact", {})
         impact_list = []
-        for task_id, task_data in raw.get("impact", {}).items():
+        for task_id, field_map in task_metric_map.items():
+            task_data = impact_raw.get(task_id, {})
             before = task_data.get("before", {})
             after = task_data.get("after", {})
-            key_map = {
-                "monthly_revenue": ("revenue", "Monthly Revenue", "INR"),
-                "engagement_rate": ("engagement", "Engagement Rate", "%"),
-                "avg_rating": ("rating", "Average Rating", "/5"),
-                "daily_orders": ("orders", "Daily Orders", "count"),
-            }
-            for field, (key, label, unit) in key_map.items():
+            for field, (key, label, unit) in field_map.items():
                 if field in before and field in after:
                     impact_list.append({"key": key, "label": label, "before": round(before[field], 2), "after": round(after[field], 2), "unit": unit})
-            break  # use task 3 for revenue-focused metrics
 
         decisions_raw = raw.get("decisions", [])
         decisions = [
