@@ -100,7 +100,7 @@ class AutonomousGrowthRunner:
                         action_type=ActionType.ADD_HASHTAGS,
                         parameters={"count": 10},
                     ),
-                    "Maximise hashtag quality first to boost post multiplier.",
+                    "Maximise hashtag quality first to boost the post multiplier.",
                     "Hashtag quality reaches 0.90, amplifying all future content.",
                 )
             if m.engagement_rate < 0.045:
@@ -110,13 +110,13 @@ class AutonomousGrowthRunner:
                         parameters={"quality": 5},
                     ),
                     "High-quality content drives engagement and organic reach.",
-                    "Engagement jumps close to the 5 % target.",
+                    "Engagement jumps close to the 5% target.",
                 )
             if m.followers < 1000:
                 return (
                     Action(action_type=ActionType.RUN_AD, parameters={"budget": 3000}),
                     "Paid reach closes the follower gap quickly.",
-                    "Follower count crosses the 1 000 target.",
+                    "Follower count crosses the 1,000 target.",
                 )
             return (
                 Action(action_type=ActionType.GENERATE_POST, parameters={"quality": 5}),

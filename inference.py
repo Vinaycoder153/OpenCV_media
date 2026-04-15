@@ -122,7 +122,8 @@ def _heuristic_action(task_id: int, step: int) -> Action:
 
     * Task 1 — 3-step burst: hashtag prep → high-quality post → paid boost.
     * Task 2 — 12-step dual-metric push: 1 review request for rating base,
-      then alternating service improvements and professional replies.
+      then alternating service improvements and professional replies to
+      avoid diminishing returns.
     * Task 3 — 11-step satisfaction-first: stack small offers to build
       customer satisfaction to 1.0, then a large bundle for revenue + orders.
     """
@@ -134,8 +135,8 @@ def _heuristic_action(task_id: int, step: int) -> Action:
             Action(action_type=ActionType.RUN_AD, parameters={"budget": 3000}),
         ],
         # Task 2 – Review Management  (score ≈ 0.82, goal in 12 steps)
-        # Pattern: req, then (improve, reply) × 5, improve — keeps diminish
-        # at 1.0 by alternating action types every step.
+        # Pattern: req, then (improve, reply) × 5, improve — keeps the
+        # diminishing-returns multiplier at 1.0 by alternating action types.
         2: [
             Action(
                 action_type=ActionType.REQUEST_REVIEW,
