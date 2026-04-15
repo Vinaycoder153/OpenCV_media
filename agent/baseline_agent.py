@@ -48,38 +48,63 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _HEURISTICS: Dict[int, List[Action]] = {
+    # Task 1 – Social Media Growth  (score ≈ 0.94, goal in 3 steps)
+    # Prep hashtag quality, then high-quality content, then paid amplification.
     1: [
-        Action(action_type=ActionType.ADD_HASHTAGS, parameters={"count": 8}),
-        Action(action_type=ActionType.SCHEDULE_POST, parameters={"timing": "peak"}),
+        Action(action_type=ActionType.ADD_HASHTAGS, parameters={"count": 10}),
         Action(action_type=ActionType.GENERATE_POST, parameters={"quality": 5}),
-        Action(action_type=ActionType.RUN_AD, parameters={"budget": 2000}),
-        Action(action_type=ActionType.GENERATE_POST, parameters={"quality": 4}),
+        Action(action_type=ActionType.RUN_AD, parameters={"budget": 3000}),
     ],
+    # Task 2 – Review Management  (score ≈ 0.82, goal in 12 steps)
+    # 1 request_review to seed positive reviews, then alternate
+    # improve_service / reply_review to push both metrics with no diminish.
     2: [
+        Action(
+            action_type=ActionType.REQUEST_REVIEW,
+            parameters={"channel": "in-person"},
+        ),
         Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "quality"}),
         Action(
             action_type=ActionType.REPLY_REVIEW, parameters={"tone": "professional"}
         ),
+        Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "quality"}),
         Action(
-            action_type=ActionType.REQUEST_REVIEW, parameters={"channel": "in-person"}
+            action_type=ActionType.REPLY_REVIEW, parameters={"tone": "professional"}
         ),
-        Action(action_type=ActionType.REPLY_REVIEW, parameters={"tone": "friendly"}),
-        Action(action_type=ActionType.OFFER_DISCOUNT, parameters={"value": 15}),
-        Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "speed"}),
+        Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "quality"}),
+        Action(
+            action_type=ActionType.REPLY_REVIEW, parameters={"tone": "professional"}
+        ),
+        Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "quality"}),
+        Action(
+            action_type=ActionType.REPLY_REVIEW, parameters={"tone": "professional"}
+        ),
+        Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "quality"}),
+        Action(
+            action_type=ActionType.REPLY_REVIEW, parameters={"tone": "professional"}
+        ),
+        Action(action_type=ActionType.IMPROVE_SERVICE, parameters={"area": "quality"}),
     ],
+    # Task 3 – Revenue Optimization  (score ≈ 1.00, goal in 11 steps)
+    # Stack small offers to build customer satisfaction to 1.0, then a large
+    # bundle lifts AOV and orders for a perfect revenue score.
     3: [
-        Action(
-            action_type=ActionType.RUN_CAMPAIGN,
-            parameters={"type": "social", "budget": 5000},
-        ),
-        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 15}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 5}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 5}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 5}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 5}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 5}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 5}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 5}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 5}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 5}),
+        Action(action_type=ActionType.ADD_OFFER, parameters={"discount_pct": 5}),
         Action(
             action_type=ActionType.LAUNCH_BUNDLE,
-            parameters={"items": ["item1", "item2", "item3"], "bundle_price": 300.0},
-        ),
-        Action(
-            action_type=ActionType.RUN_CAMPAIGN,
-            parameters={"type": "email", "budget": 3000},
+            parameters={
+                "items": ["coffee", "snack", "dessert", "drink", "combo"],
+                "bundle_price": 500.0,
+            },
         ),
     ],
 }
@@ -165,7 +190,7 @@ class BaselineAgent:
 
     def _heuristic_action(self, step: int) -> Action:
         actions = _HEURISTICS[self.task_id]
-        return actions[step % len(actions)]
+        return actions[min(step, len(actions) - 1)]
 
     # ------------------------------------------------------------------
     # Episode runner

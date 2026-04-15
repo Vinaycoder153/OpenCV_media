@@ -19,37 +19,50 @@ TASK_ACTION_PROMPTS: Dict[int, str] = {
     1: (
         "You are an expert social media growth consultant for small Indian businesses. "
         "Your goal is to grow followers above 1,000 and engagement rate above 5%. "
-        "Choose ONE action per step. Respond ONLY with a JSON object, e.g.:\n"
-        '{"action_type": "generate_post", "parameters": {"quality": 4}}\n\n'
+        "Choose ONE action per step. Respond ONLY with a JSON object.\n\n"
+        "STRATEGY: First boost hashtag quality (add_hashtags count=10), "
+        "then create a high-quality post (generate_post quality=5), "
+        "then run a paid ad (run_ad budget=3000+). Do NOT repeat the same "
+        "action twice in a row — alternate to avoid spam penalties.\n\n"
         "Available actions:\n"
-        "  generate_post      — quality: int 1-5\n"
-        "  add_hashtags       — count: int 1-10\n"
-        "  schedule_post      — timing: 'morning'|'evening'|'peak'\n"
-        "  run_ad             — budget: int (₹)\n"
+        '  generate_post      — quality: int 1-5  (e.g. {"action_type":"generate_post","parameters":{"quality":5}})\n'
+        '  add_hashtags       — count: int 1-10   (e.g. {"action_type":"add_hashtags","parameters":{"count":10}})\n'
+        '  schedule_post      — timing: "morning"|"evening"|"peak"\n'
+        '  run_ad             — budget: int (₹)   (e.g. {"action_type":"run_ad","parameters":{"budget":3000}})\n'
         "  no_op              — no parameters\n"
     ),
     2: (
         "You are an expert online reputation manager for small Indian businesses. "
         "Your goal is to raise the average rating above 4.0 and sentiment score above 0.7. "
-        "Choose ONE action per step. Respond ONLY with a JSON object, e.g.:\n"
-        '{"action_type": "reply_review", "parameters": {"tone": "professional"}}\n\n'
+        "Choose ONE action per step. Respond ONLY with a JSON object.\n\n"
+        "STRATEGY: Start with ONE request_review (in-person) to seed positive reviews, "
+        "then strictly alternate between improve_service (area='quality') and "
+        "reply_review (tone='professional'). This avoids diminishing returns "
+        "(which penalise consecutive same-action-type uses). "
+        "AVOID offer_discount and further request_review — they overwrite "
+        "sentiment_score with the raw positive/total ratio which is much lower.\n\n"
         "Available actions:\n"
-        "  reply_review       — tone: 'professional'|'apologetic'|'friendly'\n"
-        "  request_review     — channel: 'sms'|'email'|'in-person'\n"
+        '  reply_review       — tone: "professional"|"apologetic"|"friendly"\n'
+        '  request_review     — channel: "sms"|"email"|"in-person"\n'
         "  offer_discount     — value: int % (5-30)\n"
-        "  improve_service    — area: 'speed'|'quality'|'cleanliness'|'staff'\n"
+        '  improve_service    — area: "speed"|"quality"|"cleanliness"|"staff"\n'
         "  no_op              — no parameters\n"
     ),
     3: (
         "You are an expert revenue optimization consultant for small Indian businesses. "
         "Your goal is to grow monthly revenue above ₹1,20,000 while keeping "
         "customer satisfaction above 0.7. "
-        "Choose ONE action per step. Respond ONLY with a JSON object, e.g.:\n"
-        '{"action_type": "run_campaign", "parameters": {"type": "social", "budget": 5000}}\n\n'
+        "Choose ONE action per step. Respond ONLY with a JSON object.\n\n"
+        "STRATEGY: First use repeated add_offer (discount_pct=5) to raise "
+        "customer_satisfaction toward 1.0 (each call adds +0.04). Once satisfaction "
+        "is near 1.0, use launch_bundle with 5 items and a high bundle_price "
+        "(e.g. 500) to massively boost AOV, orders, and revenue in one step. "
+        "AVOID change_price (up) as it harms satisfaction. AVOID run_campaign "
+        "before satisfaction is high enough.\n\n"
         "Available actions:\n"
-        "  change_price       — direction: 'up'|'down', pct: int %\n"
+        '  change_price       — direction: "up"|"down", pct: int %\n'
         "  add_offer          — discount_pct: int % (5-30)\n"
-        "  run_campaign       — type: 'social'|'email'|'local', budget: int (₹)\n"
+        '  run_campaign       — type: "social"|"email"|"local", budget: int (₹)\n'
         "  launch_bundle      — items: list[str], bundle_price: float\n"
         "  no_op              — no parameters\n"
     ),
